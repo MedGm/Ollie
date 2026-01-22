@@ -1,71 +1,95 @@
-import { Bot, ArrowUp, Square } from 'lucide-react'
+import { Bot, ArrowUp, Square, ArrowDown } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useChatStore } from '../store/chatStore'
 import Message from './Message'
 
 export default function MainPanel() {
   const [message, setMessage] = useState('')
+  const [showScrollButton, setShowScrollButton] = useState(false)
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true)
+  const containerRef = useRef<HTMLDivElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+
   // Subscribe to all relevant state to force re-renders
-  const { 
-    messages, 
-    sendMessage, 
-    currentModel, 
-    isStreaming, 
-    updateCounter, 
+  const {
+    messages,
+    sendMessage,
+    currentModel,
+    isStreaming,
+    updateCounter,
     lastUpdate,
-    stopStreaming 
+    stopStreaming
   } = useChatStore()
-  
+
   // Add debugging for re-renders
   console.log('🎨 MainPanel render - message count:', messages.length, 'updateCounter:', updateCounter, 'lastUpdate:', lastUpdate)
-  
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    messagesEndRef.current?.scrollIntoView({ behavior })
+    setShouldAutoScroll(true)
+    setShowScrollButton(false)
   }
-  
+
+  // Check scroll position to toggle auto-scroll
+  const handleScroll = () => {
+    if (!containerRef.current) return
+
+    const { scrollTop, scrollHeight, clientHeight } = containerRef.current
+    const isNearBottom = scrollHeight - scrollTop - clientHeight < 100
+
+    setShouldAutoScroll(isNearBottom)
+    setShowScrollButton(!isNearBottom)
+  }
+
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-  
+    if (shouldAutoScroll) {
+      scrollToBottom('smooth')
+    }
+  }, [messages, updateCounter, shouldAutoScroll]) // Depend on messages AND updateCounter (for streaming)
+
   const handleSendMessage = async () => {
     if (!message.trim() || isStreaming || !currentModel) return
-    
+
     const messageContent = message.trim()
     setMessage('')
-    
+    setShouldAutoScroll(true) // Always scroll to bottom on new message
+
     // Reset textarea height
     const textarea = document.querySelector('textarea')
     if (textarea) {
       textarea.style.height = 'auto'
     }
-    
+
     await sendMessage(messageContent)
   }
-  
+
   const handleStopStreaming = async () => {
     await stopStreaming()
   }
-  
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       handleSendMessage()
     }
   }
-  
+
   const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
     const target = e.target as HTMLTextAreaElement
     target.style.height = 'auto'
     target.style.height = `${target.scrollHeight}px`
   }
-  
+
   const hasMessages = messages.length > 0
-  
+
   return (
-    <div className=" flex-1 flex flex-col min-h-0 overflow-hidden bg-white">
+    <div className="flex-1 flex flex-col min-h-0 overflow-hidden bg-white relative">
       {/* Chat Messages Area */}
-      <div className=" flex-1 min-h-0 overflow-y-auto">
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="flex-1 min-h-0 overflow-y-auto scroll-smooth"
+      >
         {!hasMessages ? (
           /* Welcome Message */
           <div className="flex flex-col items-center justify-center h-full p-8 max-w-4xl mx-auto">
@@ -74,21 +98,21 @@ export default function MainPanel() {
               <div className="w-20 h-20 bg-gradient-to-br from-gray-900 to-gray-700 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg">
                 <Bot size={40} className="text-white" />
               </div>
-              
+
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
                 How can I help you today?
               </h1>
-              
+
               <p className="text-gray-600 mb-12 text-lg max-w-2xl mx-auto">
-                {currentModel 
-                  ? `I'm ready to chat using ${currentModel}. Ask me anything, and I'll do my best to help!` 
+                {currentModel
+                  ? `I'm ready to chat using ${currentModel}. Ask me anything, and I'll do my best to help!`
                   : 'Select a model from the dropdown above to start chatting'
                 }
               </p>
-              
+
               {/* Quick Start Examples */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                <button 
+                <button
                   onClick={() => setMessage('Explain how this code works')}
                   className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-2xl text-left transition-all duration-200 group hover:shadow-lg hover:-translate-y-1"
                   disabled={!currentModel}
@@ -101,8 +125,8 @@ export default function MainPanel() {
                     </div>
                   </div>
                 </button>
-                
-                <button 
+
+                <button
                   onClick={() => setMessage('Write a professional email')}
                   className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 rounded-2xl text-left transition-all duration-200 group hover:shadow-lg hover:-translate-y-1"
                   disabled={!currentModel}
@@ -115,8 +139,8 @@ export default function MainPanel() {
                     </div>
                   </div>
                 </button>
-                
-                <button 
+
+                <button
                   onClick={() => setMessage('Help me analyze this data')}
                   className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 hover:from-purple-100 hover:to-violet-100 border border-purple-200 rounded-2xl text-left transition-all duration-200 group hover:shadow-lg hover:-translate-y-1"
                   disabled={!currentModel}
@@ -129,8 +153,8 @@ export default function MainPanel() {
                     </div>
                   </div>
                 </button>
-                
-                <button 
+
+                <button
                   onClick={() => setMessage('What is machine learning?')}
                   className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200 rounded-2xl text-left transition-all duration-200 group hover:shadow-lg hover:-translate-y-1"
                   disabled={!currentModel}
@@ -158,7 +182,18 @@ export default function MainPanel() {
           </div>
         )}
       </div>
-      
+
+      {/* Floating Scroll Button */}
+      {showScrollButton && (
+        <button
+          onClick={() => scrollToBottom()}
+          className="absolute bottom-32 left-1/2 transform -translate-x-1/2 bg-white border border-gray-200 text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-full p-2 shadow-lg transition-all z-10 flex items-center gap-2 px-4"
+        >
+          <ArrowDown size={16} />
+          <span className="text-sm font-medium">Scroll to bottom</span>
+        </button>
+      )}
+
       {/* Input Area */}
       <div className="border-t border-gray-100 bg-gray-50/50 backdrop-blur-sm">
         <div className="w-full max-w-4xl mx-auto p-6 sm:p-8">
@@ -177,14 +212,13 @@ export default function MainPanel() {
                   disabled={!currentModel || isStreaming}
                 />
               </div>
-              <button 
-                className={`p-3 rounded-2xl transition-all duration-200 ${
-                  isStreaming
-                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg' 
+              <button
+                className={`p-3 rounded-2xl transition-all duration-200 ${isStreaming
+                    ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg'
                     : message.trim() && currentModel
-                    ? 'bg-gray-900 hover:bg-gray-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5' 
-                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                }`}
+                      ? 'bg-gray-900 hover:bg-gray-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  }`}
                 disabled={!currentModel && !isStreaming}
                 onClick={isStreaming ? handleStopStreaming : handleSendMessage}
               >
@@ -196,10 +230,10 @@ export default function MainPanel() {
               </button>
             </div>
           </div>
-          
+
           <div className="flex justify-center mt-4">
             <p className="text-xs text-gray-500">
-              {currentModel 
+              {currentModel
                 ? 'Ollama can make mistakes. Consider checking important information.'
                 : 'Select a model from the dropdown above to start chatting'
               }
