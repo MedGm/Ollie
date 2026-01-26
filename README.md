@@ -22,12 +22,25 @@ Ollama’s official desktop app is available on Windows and macOS, while Linux u
 
 ## Screenshots
 
+### Main page
 ![Overview](docs/screenshots/overview.png)
-![Models](docs/screenshots/models.png)
-![Settings](docs/screenshots/settings.png)
-![Monitoring](docs/screenshots/monitoring.png)
+
+### Chat with Vision Model
 ![Vision Model](docs/screenshots/vision-model.png)
+
+### Add file to chat
 ![File Parse](docs/screenshots/file-parse.png)
+
+### Manage Models
+![Models](docs/screenshots/models.png)
+
+### Monitor System
+![Monitoring](docs/screenshots/monitoring.png)
+
+### Settings
+![Settings](docs/screenshots/settings.png)
+
+### Modify Generation Parameters
 ![Generation Parameter](docs/screenshots/generation-parameter.png)
 
 ## Features
