@@ -29,12 +29,9 @@ Ollama’s official desktop app is available on Windows and macOS, while Linux u
 ![Monitoring](docs/screenshots/monitoring.png)
 
 ## Features
-
 - Chat with local Ollama models
   - Streaming responses with Stop button
-  - ChatGPT‑style Markdown rendering
-  - Terminal‑styled code blocks with copy
-  - Per‑chat model association and history
+  - Markdown rendering
 - Models management
   - List installed models
   - Pull with live progress
@@ -53,6 +50,12 @@ Ollama’s official desktop app is available on Windows and macOS, while Linux u
   - System metrics (CPU, memory, network) with live charts
   - Ollama server status (version, health, loaded models)
   - Model performance snapshots (token rate, response time)
+
+- **New Features (v0.2.0)**
+  - DeepSeek R1 / Reasoning: Native visualization of `<think>` blocks with collapsible UI
+  - Vision Models: Drag & drop images for analysis (LLaVA, etc.)
+  - File Context: Drag & drop PDF and TXT files to chat with your documents
+  - Math Rendering: Full LaTeX support for equations
 
 ## Prerequisites
 
