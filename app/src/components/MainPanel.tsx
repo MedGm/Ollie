@@ -2,6 +2,7 @@ import { Bot, ArrowUp, Square, ArrowDown, Paperclip, X, FileText } from 'lucide-
 import { useState, useEffect, useRef } from 'react'
 import { useChatStore } from '../store/chatStore'
 import Message from './Message'
+import { extractPdfText } from '../lib/pdf'
 
 export default function MainPanel() {
   const [message, setMessage] = useState('')
@@ -65,6 +66,16 @@ export default function MainPanel() {
             }
           }
           reader.readAsDataURL(file)
+        } else if (file.type === 'application/pdf') {
+          // Handle PDF
+          try {
+            const text = await extractPdfText(file)
+            newAttachments.push({ type: 'file', name: file.name, content: text })
+            setAttachments([...newAttachments])
+          } catch (err) {
+            console.error('Failed to parse PDF', err)
+            alert(`Failed to parse PDF: ${file.name}`)
+          }
         } else {
           // Read as Text for context
           const reader = new FileReader()

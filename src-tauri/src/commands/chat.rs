@@ -76,7 +76,7 @@ pub async fn chat_stream(
     println!("Starting stream with ID: {}", stream_id);
     
     let client = reqwest::Client::builder()
-        .timeout(std::time::Duration::from_secs(300)) // 5 minutes timeout
+        .timeout(std::time::Duration::from_secs(1800)) // 30 minutes timeout
         .build()
         .map_err(|e| e.to_string())?;
     

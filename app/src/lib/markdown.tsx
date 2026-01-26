@@ -5,7 +5,7 @@ import rehypeHighlight from 'rehype-highlight'
 import rehypeKatex from 'rehype-katex'
 import 'katex/dist/katex.min.css'
 import { useState } from 'react'
-import { ChevronDown, ChevronRight, Brain } from 'lucide-react'
+import { ChevronDown, ChevronRight, Brain, FileText } from 'lucide-react'
 
 type Props = {
   content: string
@@ -36,33 +36,66 @@ function ThoughtDropdown({ content }: { content: string }) {
   )
 }
 
+function FileDropdown({ name, content }: { name: string, content: string }) {
+  const [isOpen, setIsOpen] = useState(false)
+
+  return (
+    <div className="mb-4 border border-gray-200 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center gap-2 px-4 py-2 bg-gray-50 hover:bg-gray-100 transition-colors text-left"
+      >
+        {isOpen ? <ChevronDown size={16} className="text-gray-500" /> : <ChevronRight size={16} className="text-gray-500" />}
+        <FileText size={16} className="text-blue-500" />
+        <span className="text-sm font-medium text-gray-700">File Context: {name}</span>
+        <span className="ml-auto text-xs text-gray-400">{content.length} chars</span>
+      </button>
+
+      {isOpen && (
+        <div className="p-4 bg-gray-50/50 border-t border-gray-200 text-sm text-gray-600 leading-relaxed font-mono whitespace-pre-wrap max-h-96 overflow-y-auto">
+          {content}
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Markdown({ content }: Props) {
   // Simple parser for <think> blocks
   // Note: This handles the standard <think>... content ...</think> format
 
   let thoughtContent = ''
   let mainContent = content
+  const files: { name: string, content: string }[] = []
 
-  const thinkStart = content.indexOf('<think>')
+  // Extract File Blocks
+  // Pattern: --- File: {name} ---\n{content}\n---------------------
+  const fileRegex = /--- File: (.*?) ---\n([\s\S]*?)\n---------------------/g
+  let match;
+  while ((match = fileRegex.exec(mainContent)) !== null) {
+    files.push({ name: match[1], content: match[2].trim() })
+  }
+  // Remove files from main content for display
+  mainContent = mainContent.replace(fileRegex, '')
+
+  const thinkStart = mainContent.indexOf('<think>')
   if (thinkStart !== -1) {
-    const thinkEnd = content.indexOf('</think>')
+    const thinkEnd = mainContent.indexOf('</think>')
 
     if (thinkEnd !== -1) {
       // Completed thought block
-      thoughtContent = content.substring(thinkStart + 7, thinkEnd)
-      mainContent = content.substring(0, thinkStart) + content.substring(thinkEnd + 8)
+      thoughtContent = mainContent.substring(thinkStart + 7, thinkEnd)
+      mainContent = mainContent.substring(0, thinkStart) + mainContent.substring(thinkEnd + 8)
     } else {
       // Stream is potentially still inside the think block
-      thoughtContent = content.substring(thinkStart + 7)
-      mainContent = content.substring(0, thinkStart) // Hide partial think tag from main content
+      thoughtContent = mainContent.substring(thinkStart + 7)
+      mainContent = mainContent.substring(0, thinkStart) // Hide partial think tag from main content
     }
   }
 
   // Pre-process LaTeX delimiters for standard compatibility
   // Replace \[ ... \] with $$ ... $$
   // Replace \( ... \) with $ ... $
-  // Note: This is a simple regex replacement and might affect code blocks if they contain these patterns literally.
-  // A robust solution requires a remark plugin, but this covers 99% of LLM output cases.
   mainContent = mainContent
     .replace(/\\\[([\s\S]*?)\\\]/g, '$$$$$1$$$$') // \[ ... \] -> $$ ... $$
     .replace(/\\\(([\s\S]*?)\\\)/g, '$$$1$$')     // \( ... \) -> $ ... $
@@ -70,6 +103,9 @@ export default function Markdown({ content }: Props) {
   return (
     <div className="markdown-body w-full max-w-none">
       {thoughtContent && <ThoughtDropdown content={thoughtContent} />}
+      {files.map((f, i) => (
+        <FileDropdown key={i} name={f.name} content={f.content} />
+      ))}
 
       <div className="prose prose-base max-w-none text-gray-900 leading-relaxed">
         <ReactMarkdown
