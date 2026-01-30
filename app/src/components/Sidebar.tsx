@@ -1,4 +1,4 @@
-import { Settings, Database, Plus, Search, Bot, Trash2, Activity } from 'lucide-react'
+import { Settings, Database, Plus, Search, Trash2, Activity, Bot } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useUIStore } from '../store/uiStore'
 import { invoke } from '@tauri-apps/api/core'
@@ -67,11 +67,11 @@ export default function Sidebar() {
       {/* Header with Ollama Logo */}
       <div className="p-6 border-b border-gray-100">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl flex items-center justify-center shadow-lg">
-            <Bot size={24} className="text-white" />
+          <div className="w-10 h-10 flex items-center justify-center shadow-none">
+            <img src="/ollie-logo.png" alt="Ollie" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Ollama</h1>
+            <h1 className="text-xl font-bold text-gray-900">Ollie</h1>
             <p className="text-xs text-gray-500">AI Chat Interface</p>
           </div>
         </div>

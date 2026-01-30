@@ -49,9 +49,9 @@ jobs:
           projectPath: src-tauri
           args: --verbose
           tagName: v__VERSION__
-          releaseName: OllamaGUI v__VERSION__
+          releaseName: Ollie v__VERSION__
           releaseBody: |
-            Linux build for OllamaGUI.
+            Linux build for Ollie.
 
             - OS: Linux (x86_64)
             - Contents: AppImage, deb/rpm (if available), checksums

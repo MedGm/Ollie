@@ -38,7 +38,7 @@ export default function TitleBar() {
         <div data-tauri-drag-region className="h-9 bg-white border-b border-gray-200 flex items-center justify-between select-none fixed top-0 left-0 right-0 z-50">
             {/* Title / Drag Area */}
             <div className="flex-1 h-full flex items-center px-4" data-tauri-drag-region>
-                <span className="text-xs font-semibold text-gray-500 pointer-events-none tracking-wide">OllamaGUI</span>
+                <span className="text-xs font-semibold text-gray-500 pointer-events-none tracking-wide">Ollie</span>
             </div>
 
             {/* Window Controls */}

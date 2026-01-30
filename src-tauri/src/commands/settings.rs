@@ -20,7 +20,7 @@ pub struct Settings {
 
 fn config_dir() -> Result<PathBuf, String> {
     let home = std::env::var("HOME").map_err(|e| format!("Cannot read HOME: {}", e))?;
-    let dir = PathBuf::from(home).join(".config").join("ollama-gui");
+    let dir = PathBuf::from(home).join(".config").join("ollie");
     if !dir.exists() {
         fs::create_dir_all(&dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
     }

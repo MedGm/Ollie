@@ -1,4 +1,4 @@
-import { Bot, ArrowUp, Square, ArrowDown, Paperclip, X, FileText } from 'lucide-react'
+import { ArrowUp, Square, ArrowDown, Paperclip, X, FileText } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useChatStore } from '../store/chatStore'
 import Message from './Message'
@@ -110,7 +110,7 @@ export default function MainPanel() {
         finalContent += fileContent
       } else if (att.type === 'image') {
         // Strip the Data URL header mainly for API, but let's see what chatStore expects
-        // Ollama expects base64 string. 
+        // Ollie expects base64 string. 
         // "data:image/png;base64,..." -> split(',')[1]
         const base64 = att.content.split(',')[1]
         if (base64) images.push(base64)
@@ -161,9 +161,9 @@ export default function MainPanel() {
           /* Welcome Message */
           <div className="flex flex-col items-center justify-center h-full p-8 max-w-4xl mx-auto">
             <div className="text-center w-full">
-              {/* Ollama Logo */}
-              <div className="w-20 h-20 bg-gradient-to-br from-gray-900 to-gray-700 rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-lg">
-                <Bot size={40} className="text-white" />
+              {/* Ollie Logo */}
+              <div className="w-20 h-20 flex items-center justify-center mx-auto mb-8 shadow-none">
+                <img src="/ollie-logo.png" alt="Ollie Logo" className="w-full h-full object-contain" />
               </div>
 
               <h1 className="text-3xl font-bold text-gray-900 mb-4">
@@ -314,7 +314,7 @@ export default function MainPanel() {
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onInput={handleInput}
-                  placeholder={currentModel ? "Message Ollama..." : "Select a model to start chatting"}
+                  placeholder={currentModel ? "Message Ollie..." : "Select a model to start chatting"}
                   className="w-full resize-none bg-transparent focus:outline-none text-gray-900 placeholder-gray-500 text-base leading-7"
                   style={{ minHeight: '28px', maxHeight: '200px' }}
                   rows={1}
@@ -343,7 +343,7 @@ export default function MainPanel() {
           <div className="flex justify-center mt-4">
             <p className="text-xs text-gray-500">
               {currentModel
-                ? 'Ollama can make mistakes. Consider checking important information.'
+                ? 'Ollie can make mistakes. Consider checking important information.'
                 : 'Select a model from the dropdown above to start chatting'
               }
             </p>
