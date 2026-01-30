@@ -42,21 +42,31 @@ jobs:
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build & Release with Tauri
+      - name: Build Tauri App
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: src-tauri
           args: --verbose
-          tagName: v__VERSION__
-          releaseName: Ollie v__VERSION__
-          releaseBody: |
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: "Ollie ${{ github.ref_name }}"
+          body: |
             Linux build for Ollie.
 
             - OS: Linux (x86_64)
-            - Contents: AppImage, deb/rpm (if available), checksums
+            - Contents: AppImage, deb (if available)
 
             Notes: Requires the Ollama daemon running locally (default http://localhost:11434).
-          releaseDraft: false
+          draft: false
           prerelease: false
+          files: |
+            src-tauri/target/release/bundle/appimage/*.AppImage
+            src-tauri/target/release/bundle/deb/*.deb
+            src-tauri/target/release/bundle/rpm/*.rpm
