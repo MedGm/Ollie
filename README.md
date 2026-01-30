@@ -62,10 +62,25 @@ Real-time tracking of your system resources (CPU, Memory) and model performance 
 
 ## Roadmap
 
-- Mobile Companion App (iOS/Android)
-- Cloud API Integration (Anthropic/OpenAI)
-- Voice Mode
-- Plugin System
+### 🚀 Upcoming Features
+
+**Core & Chat**
+- **Message Editing**: Edit sent messages and regenerate responses.
+- **Think Mode**: Toggle visibility for reasoning models' thought processes.
+- **Real-time HTML Preview**: Instant rendering of HTML/JS artifacts.
+- **Structured Outputs**: Support for JSON schemas and tool calling.
+
+**Agents & Models**
+- **Agent Store**: One-click installation of prebuilt agents (coding, writing, etc.).
+- **Model Factory**: Create and push custom Modelfiles directly from the UI.
+- **Custom Agents**: Configure specific system prompts and behaviors per chat.
+
+**Platform & Integration**
+- **Cloud API Support**: Integrate Anthropic/OpenAI alongside local models.
+- **Mobile Companion App**: iOS/Android versions.
+- **Voice Mode**: Hands-free voice interaction.
+- **Plugin System**: Extend functionality with community plugins.
+- **Internationalization**: Multi-language UI support.
 
 ## License
 
