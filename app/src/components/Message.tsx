@@ -1,5 +1,5 @@
 import { User, Copy, Check, Pencil, Wrench, Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { useChatStore, type ChatMessage } from '../store/chatStore'
 import Markdown from '../lib/markdown'
 import TextareaAutosize from 'react-textarea-autosize'
@@ -8,14 +8,11 @@ interface MessageProps {
   message: ChatMessage
 }
 
-export default function Message({ message }: MessageProps) {
+function Message({ message }: MessageProps) {
   const [copied, setCopied] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editContent, setEditContent] = useState(message.content)
   const editUserMessage = useChatStore(state => state.editUserMessage)
-
-  // Debug re-renders
-  // console.log('Message component render:', message.id, 'isBinding:', isEditing)
 
   const copyToClipboard = async () => {
     try {
@@ -56,24 +53,24 @@ export default function Message({ message }: MessageProps) {
   const isUser = message.role === 'user'
 
   return (
-    <div className={`w-full flex items-start gap-6 py-8 ${isUser ? 'bg-gray-50/50' : 'bg-white'} group border-b border-gray-100/50 last:border-b-0`}>
+    <div className={`w-full flex items-start gap-4 py-5 px-1 ${isUser ? 'bg-gray-50/30' : 'bg-white'} group border-b border-gray-100/40 last:border-b-0`}>
       {/* Avatar */}
-      <div className={`w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${isUser
-        ? 'bg-gradient-to-br from-blue-600 to-blue-700'
-        : 'bg-white border border-gray-100'
+      <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isUser
+        ? 'bg-gray-800'
+        : 'bg-white border border-gray-150 shadow-sm'
         }`}>
         {isUser ? (
-          <User size={20} className="text-white" />
+          <User size={16} className="text-white" />
         ) : (
-          <img src="/ollie-logo.png" alt="Ollie" className="w-6 h-6 object-contain" />
+          <img src="/ollie-logo.png" alt="Ollie" className="w-5 h-5 object-contain" />
         )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <div className={`text-sm font-semibold mb-3 ${isUser ? 'text-blue-900' : 'text-gray-900'
+            <div className={`text-xs font-medium mb-2 ${isUser ? 'text-gray-500' : 'text-gray-500'
               }`}>
               {isUser ? 'You' : 'Ollie'}
             </div>
@@ -139,31 +136,39 @@ export default function Message({ message }: MessageProps) {
                   </div>
                 )}
 
-                <div className="prose prose-base max-w-full text-gray-900 leading-relaxed overflow-x-auto">
-                  {(() => {
-                    // Handle DeepSeek <think> blocks
-                    const thinkMatch = message.content.match(/<think>([\s\S]*?)<\/think>/)
-                    const thinkContent = thinkMatch ? thinkMatch[1] : null
-                    const cleanContent = message.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
+                {/* Message Content */}
+                <div className="max-w-full overflow-hidden text-gray-900 leading-relaxed text-sm">
+                  {isUser ? (
+                    <div className="whitespace-pre-wrap text-blue-900">
+                      {message.content}
+                    </div>
+                  ) : (
+                    (() => {
+                      // Handle DeepSeek <think> blocks
+                      const thinkMatch = message.content.match(/<think>([\s\S]*?)<\/think>/)
+                      const thinkContent = thinkMatch ? thinkMatch[1] : null
+                      const cleanContent = message.content.replace(/<think>[\s\S]*?<\/think>/g, '').trim()
 
-                    return (
-                      <>
-                        {thinkContent && (
-                          <details className="mb-4 group">
-                            <summary className="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700 select-none flex items-center gap-1">
-                              <span className="opacity-50 group-open:opacity-100 transition-opacity">💭 Thought Process</span>
-                            </summary>
-                            <div className="mt-2 pl-3 border-l-2 border-gray-100 text-xs text-gray-500 font-mono whitespace-pre-wrap">
-                              {thinkContent}
-                            </div>
-                          </details>
-                        )}
-                        <Markdown content={cleanContent || (message.isStreaming && !thinkContent ? '' : message.content)} />
-                      </>
-                    )
-                  })()}
-                  {message.isStreaming && (
-                    <span className="inline-block w-2 h-5 bg-gray-400 animate-pulse ml-1 rounded-full"></span>
+                      return (
+                        <>
+                          {thinkContent && (
+                            <details className="mb-4 group">
+                              <summary className="cursor-pointer text-xs font-medium text-gray-500 hover:text-gray-700 select-none flex items-center gap-1">
+                                <span className="opacity-50 group-open:opacity-100 transition-opacity">💭 Thought Process</span>
+                              </summary>
+                              <div className="mt-2 pl-3 border-l-2 border-gray-100 text-xs text-gray-500 font-mono whitespace-pre-wrap">
+                                {thinkContent}
+                              </div>
+                            </details>
+                          )}
+                          <Markdown content={cleanContent || (message.isStreaming && !thinkContent ? '' : message.content)} isStreaming={message.isStreaming} />
+                        </>
+                      )
+                    })()
+                  )}
+
+                  {message.isStreaming && !isUser && (
+                    <span className="inline-block w-2 h-5 bg-gray-400 animate-pulse ml-1 rounded-full align-middle"></span>
                   )}
                 </div>
               </>
@@ -171,15 +176,15 @@ export default function Message({ message }: MessageProps) {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity ml-4 self-start mt-[-2px]">
             {/* Edit Button (User only) */}
             {isUser && !isEditing && (
               <button
                 onClick={handleEdit}
-                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
                 title="Edit message"
               >
-                <Pencil size={16} />
+                <Pencil size={14} />
               </button>
             )}
 
@@ -187,10 +192,10 @@ export default function Message({ message }: MessageProps) {
             {!isUser && !isEditing && message.content && (
               <button
                 onClick={copyToClipboard}
-                className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all"
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all"
                 title="Copy message"
               >
-                {copied ? <Check size={16} /> : <Copy size={16} />}
+                {copied ? <Check size={14} /> : <Copy size={14} />}
               </button>
             )}
           </div>
@@ -199,3 +204,11 @@ export default function Message({ message }: MessageProps) {
     </div>
   )
 }
+
+export default memo(Message, (prev, next) => {
+  if (prev.message.id !== next.message.id) return false
+  if (prev.message.content !== next.message.content) return false
+  if (prev.message.isStreaming !== next.message.isStreaming) return false
+  if (prev.message.toolCalls !== next.message.toolCalls) return false
+  return true
+})

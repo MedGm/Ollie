@@ -90,20 +90,20 @@ export default function ModelSelector() {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-3 px-4 py-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors min-w-[200px]"
+        className="flex items-center gap-2 px-2.5 py-1.5 bg-white hover:bg-gray-50 border border-gray-200 rounded-md transition-all duration-150 min-w-[160px]"
       >
-        <ProviderIcon size={18} className="text-gray-600 flex-shrink-0" />
-        <span className="text-sm font-medium text-gray-900 truncate flex-1 text-left">
+        <ProviderIcon size={14} className="text-gray-500 flex-shrink-0" />
+        <span className="text-xs font-medium text-gray-800 truncate flex-1 text-left">
           {displayName}
         </span>
         {isCustomModel && (
-          <span className="text-[10px] px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded font-medium">Custom</span>
+          <span className="text-[9px] px-1 py-0.5 bg-purple-100 text-purple-600 rounded font-medium">Custom</span>
         )}
-        <ChevronDown size={16} className="text-gray-500 flex-shrink-0" />
+        <ChevronDown size={12} className="text-gray-400 flex-shrink-0" />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto min-w-[280px]">
+        <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-[100] max-h-80 overflow-y-auto min-w-[240px]">
           {/* Cloud Mode */}
           {isCloudMode ? (
             <div className="py-2">
@@ -220,7 +220,7 @@ export default function ModelSelector() {
       {/* Overlay to close dropdown */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-40"
+          className="fixed inset-0 z-[99]"
           onClick={() => setIsOpen(false)}
         />
       )}

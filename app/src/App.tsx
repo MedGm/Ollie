@@ -31,7 +31,7 @@ function App() {
   }, [monitoringEnabled, isMonitoring, startMonitoring])
 
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden pt-9">
+    <div className="flex h-screen bg-gray-50 text-gray-900 overflow-hidden pt-8">
       <TitleBar />
       {/* Left Sidebar */}
       <Sidebar />

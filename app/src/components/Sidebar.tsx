@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useUIStore } from '../store/uiStore'
 import { invoke } from '@tauri-apps/api/core'
 import { useChatStore } from '../store/chatStore'
+import Dialog from './Dialog'
 
 type ChatMeta = {
   id: string
@@ -19,7 +20,10 @@ export default function Sidebar() {
   const [chats, setChats] = useState<ChatMeta[]>([])
   const [previews, setPreviews] = useState<Record<string, string>>({})
   const { loadChat, createNewChat, currentChatId } = useChatStore()
-  const { setView } = useUIStore()
+  const { view: currentView, setView } = useUIStore()
+
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [alertMsg, setAlertMsg] = useState<string | null>(null)
 
   const refreshChats = async () => {
     try {
@@ -63,16 +67,16 @@ export default function Sidebar() {
   }, [searchQuery, chats])
 
   return (
-    <div className="w-80 bg-white border-r border-gray-200 flex flex-col overflow-hidden shadow-sm">
+    <div className="w-72 bg-gray-50/50 border-r border-gray-200/80 flex flex-col overflow-hidden">
       {/* Header with Ollama Logo */}
-      <div className="p-6 border-b border-gray-100">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 flex items-center justify-center shadow-none">
+      <div className="p-4 border-b border-gray-200/60">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-8 h-8 flex items-center justify-center flex-shrink-0">
             <img src="/ollie-logo.png" alt="Ollie" className="w-full h-full object-contain" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Ollie</h1>
-            <p className="text-xs text-gray-500">AI Chat Interface</p>
+            <h1 className="text-base font-semibold text-gray-900">Ollie</h1>
+            <p className="text-[10px] text-gray-400">AI Chat Interface</p>
           </div>
         </div>
 
@@ -82,7 +86,7 @@ export default function Sidebar() {
             const { messages } = useChatStore.getState()
             // Prevent creating a new chat if the current chat is empty (no messages)
             if (currentChatId && messages.length === 0) {
-              alert('Finish or start a conversation in the current chat before creating a new one.')
+              setAlertMsg('Finish or start a conversation in the current chat before creating a new one.')
               return
             }
             // If no currentChatId, ensure the most recent chat is not empty either
@@ -91,7 +95,7 @@ export default function Sidebar() {
                 const latest = chats[0]
                 const rows = await invoke<any>('db_list_messages', { chatId: latest.id, limit: 1 })
                 if (Array.isArray(rows) && rows.length === 0) {
-                  alert('Your most recent chat is empty. Send a message first before creating a new chat.')
+                  setAlertMsg('Your most recent chat is empty. Send a message first before creating a new chat.')
                   return
                 }
               } catch { }
@@ -102,30 +106,30 @@ export default function Sidebar() {
               setView('chat')
             }
           }}
-          className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-gray-900 to-gray-800 hover:from-gray-800 hover:to-gray-700 text-white rounded-xl transition-all duration-200 font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg transition-all duration-150 text-sm font-medium"
         >
-          <Plus size={20} />
+          <Plus size={16} strokeWidth={2} />
           <span>New chat</span>
         </button>
       </div>
 
       {/* Search */}
-      <div className="px-6 py-4 border-b border-gray-100">
+      <div className="px-4 py-3 border-b border-gray-200/60">
         <div className="relative">
-          <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <Search size={14} className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
-            placeholder="Search conversations..."
+            placeholder="Search..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-gray-50 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:bg-white text-sm transition-all duration-200"
+            className="w-full pl-8 pr-3 py-2 bg-white border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-400 focus:border-gray-400 text-xs transition-all duration-150 placeholder:text-gray-400"
           />
         </div>
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto px-6 py-2">
-        <div className="space-y-2">
+      <div className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="space-y-0.5">
           {filtered.length === 0 ? (
             <div className="py-12 text-center text-gray-500">
               <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -137,7 +141,7 @@ export default function Sidebar() {
           ) : (
             <div className="space-y-2">
               {filtered.map((c) => (
-                <div key={c.id} className="flex items-center gap-3 group">
+                <div key={c.id} className="relative flex items-center gap-3 group">
                   <button
                     onClick={async () => {
                       // If chat has a preferred model, set it
@@ -176,33 +180,17 @@ export default function Sidebar() {
                   </button>
                   <button
                     title={c.has_messages ? 'Delete chat' : 'Cannot delete an empty chat'}
-                    className={`p-2 rounded-lg transition-colors ${c.has_messages
-                      ? 'text-gray-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100'
-                      : 'text-gray-200 cursor-not-allowed'
+                    className={`absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all duration-200 ${c.has_messages
+                      ? 'text-gray-300 hover:text-red-600 hover:bg-red-50'
+                      : 'hidden'
                       }`}
                     onClick={async (e) => {
                       e.stopPropagation()
-                      if (!c.has_messages) {
-                        return
-                      }
-                      try {
-                        const confirmDelete = confirm('Delete this chat? This cannot be undone.')
-                        if (!confirmDelete) return
-                        const ok = await invoke<boolean>('db_delete_chat', { chatId: c.id })
-                        if (ok) {
-                          await refreshChats()
-                          if (currentChatId === c.id) {
-                            // Reset current chat if it was the one deleted
-                            useChatStore.getState().clearMessages()
-                            useChatStore.getState().setCurrentChatId(null)
-                          }
-                        }
-                      } catch (err) {
-                        console.error('Delete chat failed', err)
-                      }
+                      if (!c.has_messages) return
+                      setDeleteId(c.id)
                     }}
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 </div>
               ))}
@@ -212,31 +200,83 @@ export default function Sidebar() {
       </div>
 
       {/* Bottom Navigation */}
-      <div className="p-6 border-t border-gray-100">
-        <div className="space-y-2">
-          <button
+      <div className="p-4 border-t border-gray-100">
+        <div className="space-y-1">
+          <MenuButton
+            icon={<Activity size={18} />}
+            label="Monitoring"
+            isActive={currentView === 'monitoring'}
             onClick={() => setView('monitoring')}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200 text-sm font-medium"
-          >
-            <Activity size={20} />
-            <span>Monitoring</span>
-          </button>
-          <button
+          />
+          <MenuButton
+            icon={<Database size={18} />}
+            label="Manage models"
+            isActive={currentView === 'models'}
             onClick={() => setView('models')}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200 text-sm font-medium"
-          >
-            <Database size={20} />
-            <span>Manage models</span>
-          </button>
-          <button
+          />
+          <MenuButton
+            icon={<Settings size={18} />}
+            label="Settings"
+            isActive={currentView === 'settings'}
             onClick={() => setView('settings')}
-            className="w-full flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-all duration-200 text-sm font-medium"
-          >
-            <Settings size={20} />
-            <span>Settings</span>
-          </button>
+          />
         </div>
       </div>
+      {/* Alert Dialog */}
+      <Dialog
+        isOpen={!!alertMsg}
+        title="Cannot Create Chat"
+        description={alertMsg || ''}
+        type="alert"
+        confirmLabel="OK"
+        onConfirm={() => setAlertMsg(null)}
+        onCancel={() => setAlertMsg(null)}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        isOpen={!!deleteId}
+        title="Delete Chat?"
+        description="This action cannot be undone. The chat history will be permanently removed."
+        type="confirm"
+        variant="danger"
+        confirmLabel="Delete"
+        onConfirm={async () => {
+          if (!deleteId) return
+          try {
+            const ok = await invoke<boolean>('db_delete_chat', { chatId: deleteId })
+            if (ok) {
+              await refreshChats()
+              if (currentChatId === deleteId) {
+                useChatStore.getState().clearMessages()
+                useChatStore.getState().setCurrentChatId(null)
+              }
+            }
+          } catch (err) {
+            console.error('Delete chat failed', err)
+          } finally {
+            setDeleteId(null)
+          }
+        }}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
+  )
+}
+
+function MenuButton({ icon, label, isActive, onClick }: { icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-sm font-medium group active:scale-95 ${isActive
+        ? 'bg-gray-900 text-white shadow-md'
+        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+        }`}
+    >
+      <div className={`${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-900'}`}>
+        {icon}
+      </div>
+      <span>{label}</span>
+    </button>
   )
 }

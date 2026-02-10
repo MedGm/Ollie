@@ -126,12 +126,32 @@ pub async fn model_show(name: String, server_url: Option<String>) -> Result<Show
     resp.json::<ShowResponse>().await.map_err(|e| e.to_string())
 }
 
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+use tauri::State;
+
+pub type CancellationMap = Arc<Mutex<HashMap<String, Arc<AtomicBool>>>>;
+
 #[tauri::command]
-pub async fn model_pull(app: tauri::AppHandle, name: String, server_url: Option<String>) -> Result<SimpleResponse, String> {
+pub async fn model_pull(
+    app: tauri::AppHandle,
+    name: String,
+    pull_id: Option<String>,
+    server_url: Option<String>,
+    state: State<'_, CancellationMap>,
+) -> Result<SimpleResponse, String> {
     let url = server_url.unwrap_or_else(get_ollama_url);
     let endpoint = format!("{}/api/pull", url);
 
-    let pull_id = uuid::Uuid::new_v4().to_string();
+    let pull_id = pull_id.unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+    
+    // Register cancellation token
+    let cancel_flag = Arc::new(AtomicBool::new(false));
+    {
+        let mut map = state.lock().unwrap();
+        map.insert(pull_id.clone(), cancel_flag.clone());
+    }
 
     let client = reqwest::Client::builder()
         .timeout(std::time::Duration::from_secs(60 * 60)) // up to 1 hour
@@ -157,38 +177,65 @@ pub async fn model_pull(app: tauri::AppHandle, name: String, server_url: Option<
     let mut stream = response.bytes_stream();
     let mut buffer = String::new();
 
-    while let Some(chunk) = stream.next().await {
-        match chunk {
-            Ok(bytes) => {
-                let chunk_str = String::from_utf8_lossy(&bytes);
-                buffer.push_str(&chunk_str);
-                loop {
-                    if let Some(pos) = buffer.find('\n') {
-                        let line = buffer[..pos].trim().to_string();
-                        buffer = buffer[pos + 1..].to_string();
-                        if line.is_empty() { continue; }
-                        // Forward raw JSON line as progress to UI
-                        if let Ok(value) = serde_json::from_str::<serde_json::Value>(&line) {
-                            let _ = app.emit("models:pull-progress", &serde_json::json!({
-                                "pull_id": pull_id,
-                                "progress": value
-                            }));
+    let result = loop {
+     // Check cancellation
+     if cancel_flag.load(Ordering::Relaxed) {
+         break Err("Cancelled by user".to_string());
+     }
+
+     match stream.next().await {
+        Some(chunk) => {
+            match chunk {
+                Ok(bytes) => {
+                    let chunk_str = String::from_utf8_lossy(&bytes);
+                    buffer.push_str(&chunk_str);
+                    loop {
+                        if let Some(pos) = buffer.find('\n') {
+                            let line = buffer[..pos].trim().to_string();
+                            buffer = buffer[pos + 1..].to_string();
+                            if line.is_empty() { continue; }
+                            // Forward raw JSON line as progress to UI
+                            if let Ok(value) = serde_json::from_str::<serde_json::Value>(&line) {
+                                let _ = app.emit("models:pull-progress", &serde_json::json!({
+                                    "pull_id": pull_id,
+                                    "progress": value
+                                }));
+                            } else {
+                                let _ = app.emit("models:pull-progress", &serde_json::json!({
+                                    "pull_id": pull_id,
+                                    "progress": { "status": "parsing_error", "raw": line }
+                                }));
+                            }
                         } else {
-                            let _ = app.emit("models:pull-progress", &serde_json::json!({
-                                "pull_id": pull_id,
-                                "progress": { "status": "parsing_error", "raw": line }
-                            }));
+                            break;
                         }
-                    } else {
-                        break;
                     }
                 }
-            }
-            Err(e) => {
-                let _ = app.emit("models:pull-error", &serde_json::json!({ "pull_id": pull_id, "error": e.to_string() }));
-                return Ok(SimpleResponse { success: false, error: Some(e.to_string()) });
+                Err(e) => {
+                    break Err(e.to_string());
+                }
             }
         }
+        None => {
+             // End of stream
+             break Ok(());
+        }
+     }
+    };
+
+    // Cleanup cancellation token
+    {
+        let mut map = state.lock().unwrap();
+        map.remove(&pull_id);
+    }
+
+    if let Err(e) = result {
+        if e == "Cancelled by user" {
+            let _ = app.emit("models:pull-cancelled", &serde_json::json!({ "pull_id": pull_id }));
+        } else {
+            let _ = app.emit("models:pull-error", &serde_json::json!({ "pull_id": pull_id, "error": e.clone() }));
+        }
+        return Ok(SimpleResponse { success: false, error: Some(e) });
     }
 
     // Any trailing buffered line
@@ -204,4 +251,18 @@ pub async fn model_pull(app: tauri::AppHandle, name: String, server_url: Option<
 
     let _ = app.emit("models:pull-complete", &serde_json::json!({ "pull_id": pull_id }));
     Ok(SimpleResponse { success: true, error: None })
+}
+
+#[tauri::command]
+pub async fn model_pull_cancel(
+    pull_id: String,
+    state: State<'_, CancellationMap>,
+) -> Result<SimpleResponse, String> {
+    let map = state.lock().unwrap();
+    if let Some(flag) = map.get(&pull_id) {
+        flag.store(true, Ordering::Relaxed);
+        Ok(SimpleResponse { success: true, error: None })
+    } else {
+        Ok(SimpleResponse { success: false, error: Some("Pull ID not found".to_string()) })
+    }
 }

@@ -92,7 +92,17 @@ impl LLMProvider for OpenAIProvider {
         }
         headers.insert(CONTENT_TYPE, HeaderValue::from_static("application/json"));
 
-        let mut converted_messages = convert_messages(messages);
+        // Detect if the model supports vision based on common naming patterns
+        let model_lower = model.to_lowercase();
+        let supports_vision = model_lower.contains("vision") 
+            || model_lower.contains("gpt-4o")
+            || model_lower.contains("gpt-4-turbo")
+            || model_lower.contains("claude-3")
+            || model_lower.contains("gemini")
+            || model_lower.contains("llava")
+            || model_lower.contains("moondream");
+
+        let mut converted_messages = convert_messages(messages, supports_vision);
         
         // Inject system prompt for tool usage if tools are provided
         // This helps Llama models on Groq use proper tool call format
@@ -147,7 +157,7 @@ impl LLMProvider for OpenAIProvider {
     }
 }
 
-fn convert_messages(messages: &[ChatMessage]) -> Vec<OpenAIMessage> {
+fn convert_messages(messages: &[ChatMessage], supports_vision: bool) -> Vec<OpenAIMessage> {
     messages.iter().map(|msg| {
         // Handle tool responses
         if msg.role == "tool" {
@@ -159,21 +169,26 @@ fn convert_messages(messages: &[ChatMessage]) -> Vec<OpenAIMessage> {
             };
         }
 
-        // Handle images/content
-        let content = if let Some(images) = &msg.images {
-            if !images.is_empty() {
-                let mut parts = vec![json!({"type": "text", "text": msg.content})];
-                for img in images {
-                    parts.push(json!({
-                        "type": "image_url",
-                        "image_url": { "url": format!("data:image/jpeg;base64,{}", img) }
-                    }));
+        // Handle images/content - only send images if model supports vision
+        let content = if supports_vision {
+            if let Some(images) = &msg.images {
+                if !images.is_empty() {
+                    let mut parts = vec![json!({"type": "text", "text": msg.content})];
+                    for img in images {
+                        parts.push(json!({
+                            "type": "image_url",
+                            "image_url": { "url": format!("data:image/jpeg;base64,{}", img) }
+                        }));
+                    }
+                    serde_json::Value::Array(parts)
+                } else {
+                    serde_json::Value::String(msg.content.clone())
                 }
-                serde_json::Value::Array(parts)
             } else {
                 serde_json::Value::String(msg.content.clone())
             }
         } else {
+            // Non-vision model: always use string content, ignore images
             serde_json::Value::String(msg.content.clone())
         };
 

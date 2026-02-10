@@ -18,47 +18,150 @@
 	margin: 0.5rem 0 1rem;
 }
 
-.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
 	color: #111827;
 }
 
+/* Prevent any markdown content from breaking container width */
+.markdown-body {
+	overflow-wrap: break-word;
+	word-break: break-word;
+}
+
+.markdown-body table {
+	display: block;
+	max-width: 100%;
+	overflow-x: auto;
+	border-collapse: collapse;
+}
+
+.markdown-body pre {
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+.markdown-body img {
+	max-width: 100%;
+	height: auto;
+}
+
+/* Prose overrides for width containment */
+.prose {
+	max-width: 100% !important;
+	overflow-wrap: break-word;
+	word-break: break-word;
+}
+
+.prose table {
+	display: block;
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+.prose pre {
+	max-width: 100%;
+	overflow-x: auto;
+}
+
 /* Ensure app uses full height with flex layouts */
-html, body, #root {
+html,
+body,
+#root {
 	height: 100%;
+}
+
+/* Design tokens for consistent styling */
+:root {
+	--color-primary: #3B82F6;
+	--color-primary-hover: #2563EB;
+	--transition-fast: 150ms ease;
+	--transition-normal: 200ms ease;
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+	--shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+	--radius-sm: 0.375rem;
+	--radius-md: 0.5rem;
+	--radius-lg: 0.75rem;
+}
+
+/* Custom scrollbar styling - VS Code style */
+::-webkit-scrollbar {
+	width: 10px;
+	height: 10px;
+}
+
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #d1d5db;
+	border-radius: 5px;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #9ca3af;
+	border: 2px solid transparent;
+	background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+	background: transparent;
+}
+
+/* Focus ring for accessibility */
+.focus-ring:focus-visible {
+	outline: 2px solid var(--color-primary);
+	outline-offset: 2px;
+}
+
+/* Smooth transitions utility */
+.transition-smooth {
+	transition: all var(--transition-normal);
 }
 
 /* Minimal highlight.js theme for dark code blocks */
 .hljs {
 	color: #e5e7eb;
 }
+
 .hljs-comment,
 .hljs-quote {
 	color: #9ca3af;
 }
+
 .hljs-keyword,
 .hljs-selector-tag,
 .hljs-subst {
 	color: #93c5fd;
 }
+
 .hljs-literal,
 .hljs-number,
 .hljs-tag .hljs-attr {
 	color: #fca5a5;
 }
+
 .hljs-string,
 .hljs-doctag,
 .hljs-regexp {
 	color: #86efac;
 }
+
 .hljs-title,
 .hljs-section {
 	color: #fde68a;
 }
+
 .hljs-attr,
 .hljs-variable,
 .hljs-template-variable {
 	color: #c4b5fd;
 }
+
 .hljs-built_in,
 .hljs-builtin-name,
 .hljs-symbol,
@@ -75,7 +178,7 @@ html, body, #root {
 	background: #3B82F6;
 	border-radius: 50%;
 	cursor: pointer;
-	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .slider::-moz-range-thumb {
@@ -85,5 +188,5 @@ html, body, #root {
 	border-radius: 50%;
 	cursor: pointer;
 	border: none;
-	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }

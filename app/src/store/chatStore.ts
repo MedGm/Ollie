@@ -35,8 +35,6 @@ interface ChatState {
   isStreaming: boolean
   streamingMessageId: string | null
   currentStreamId: string | null  // Track current stream ID
-  updateCounter: number  // Force re-render counter
-  lastUpdate: number  // Timestamp for updates
   currentSystemPrompt: string | null
 
   // Actions
@@ -64,8 +62,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
   isStreaming: false,
   streamingMessageId: null,
   currentStreamId: null,
-  updateCounter: 0,
-  lastUpdate: 0,
   currentSystemPrompt: null,
 
   setCurrentModel: (model) => set({ currentModel: model }),
@@ -137,66 +133,31 @@ export const useChatStore = create<ChatState>((set, get) => ({
   updateMessage: (id, content) => {
     set((state) => {
       const messageIndex = state.messages.findIndex(msg => msg.id === id)
-      if (messageIndex === -1) {
-        console.warn(`Message with id ${id} not found`)
-        return state
+      if (messageIndex === -1) return state
+
+      const newMessages = [...state.messages]
+      newMessages[messageIndex] = {
+        ...state.messages[messageIndex],
+        content,
+        isStreaming: false,
       }
-
-      // Create completely new array and objects to force React re-render
-      const newMessages = state.messages.map((msg, index) => {
-        if (index === messageIndex) {
-          return {
-            id: msg.id,
-            role: msg.role,
-            content: content,
-            timestamp: msg.timestamp,
-            isStreaming: false,
-            toolCalls: msg.toolCalls
-          }
-        }
-        return { ...msg } // Also clone other messages to be safe
-      })
-
-      console.log('🔄 Force updating final message:', id, 'content length:', content.length)
-
-      return {
-        messages: newMessages,
-        updateCounter: state.updateCounter + 1,
-        lastUpdate: Date.now()
-      }
+      return { messages: newMessages }
     })
   },
 
   updateStreamingMessage: (id, content) => {
     set((state) => {
       const messageIndex = state.messages.findIndex(msg => msg.id === id)
-      if (messageIndex === -1) {
-        console.warn(`Streaming message with id ${id} not found`)
-        return state
+      if (messageIndex === -1) return state
+
+      // Only clone the streaming message — leave all others untouched
+      const newMessages = [...state.messages]
+      newMessages[messageIndex] = {
+        ...state.messages[messageIndex],
+        content,
+        isStreaming: true,
       }
-
-      // Create completely new array and objects to force React re-render
-      const newMessages = state.messages.map((msg, index) => {
-        if (index === messageIndex) {
-          return {
-            id: msg.id,
-            role: msg.role,
-            content: content,
-            timestamp: msg.timestamp,
-            isStreaming: true,
-            toolCalls: msg.toolCalls
-          }
-        }
-        return { ...msg } // Also clone other messages to be safe
-      })
-
-      console.log('🔄 Force updating streaming message:', id, 'content length:', content.length)
-
-      return {
-        messages: newMessages,
-        updateCounter: state.updateCounter + 1,
-        lastUpdate: Date.now()
-      }
+      return { messages: newMessages }
     })
   },
 
@@ -215,7 +176,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ...msg,
           toolCalls: [...currentTools, toolCall]
         }
-        return { messages: newMessages, updateCounter: state.updateCounter + 1, lastUpdate: Date.now() }
+        return { messages: newMessages }
       }
       return state
     })
@@ -234,7 +195,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           ...msg,
           toolCalls: msg.toolCalls.map(t => ({ ...t, status: 'done' as const }))
         }
-        return { messages: newMessages, updateCounter: state.updateCounter + 1, lastUpdate: Date.now() }
+        return { messages: newMessages }
       }
       return state
     })
@@ -311,51 +272,83 @@ export const useChatStore = create<ChatState>((set, get) => ({
     let unlistenCancelled: (() => void) | null = null
     let unlistenToolStart: (() => void) | null = null
 
-    // Throttled chunk batching to prevent UI lag with fast streams
-    let chunkBuffer = ''
-    let flushScheduled = false
-    let isFirstChunk = true
-    let flushTimeoutId: NodeJS.Timeout | null = null
-    const FLUSH_INTERVAL_MS = 50 // Flush every 50ms max
+    // ── ChatGPT-style character drip queue ──
+    // Incoming tokens are queued. A 30ms interval drips them to the UI
+    // at a controlled rate, decoupling API speed from display speed.
+    let pendingText = ''          // Text waiting to be dripped to UI
+    let displayedContent = ''     // Text currently shown to user
+    let dripIntervalId: ReturnType<typeof setInterval> | null = null
+    let streamDone = false        // True when backend signals done
+    let persisted = false
+    const DRIP_MS = 30            // Drip every 30ms (~33fps)
 
-    const flushChunkBuffer = () => {
-      if (!chunkBuffer) return
+    const dripTick = () => {
+      if (pendingText.length === 0) {
+        if (streamDone) {
+          // All text displayed and stream is done — finalize
+          if (dripIntervalId) { clearInterval(dripIntervalId); dripIntervalId = null }
 
-      const currentState = get()
-      // Use efficient partial updates if possible, but here we rebuild message
-      // Note: We could optimize this further by just sending the delta to the component
-      // but Zustand updates are usually fast enough if not too frequent.
-      const currentMessage = currentState.messages.find(m => m.id === assistantMessageId)
-      if (currentMessage) {
-        // Append buffer to current content
-        const newContent = (currentMessage.content || '') + chunkBuffer
-        currentState.updateStreamingMessage(assistantMessageId, newContent)
-      }
-      chunkBuffer = ''
-      flushScheduled = false
-    }
+          const finalState = get()
+          finalState.setStreaming(false)
+          finalState.markToolCallsDone(assistantMessageId)
+          const currentMessage = finalState.messages.find(m => m.id === assistantMessageId)
+          if (currentMessage) {
+            finalState.updateMessage(assistantMessageId, displayedContent)
+            if (!persisted && chatId) {
+              invoke('db_append_message', { chatId, role: 'assistant', content: displayedContent, metaJson: null })
+                .then(() => window.dispatchEvent(new CustomEvent('chats-refresh')))
+                .catch((e) => console.warn('db_append_message (assistant) failed', e))
+              persisted = true
+            }
+          }
 
-    const scheduleFlush = () => {
-      // Always flush the very first chunk immediately for instant feedback
-      if (isFirstChunk) {
-        flushChunkBuffer()
-        isFirstChunk = false
+          // Auto-title trigger
+          const stateAfter = get()
+          if (stateAfter.messages.length <= 5 && chatId) {
+            const userMsg = stateAfter.messages.find(m => m.role === 'user')
+            if (userMsg && !stateAfter.currentSystemPrompt?.includes('Generate a short')) {
+              stateAfter.generateAutoTitle(chatId, userMsg.content).catch(console.error)
+            }
+          }
+          cleanup()
+        }
         return
       }
 
-      if (flushScheduled) return
-      flushScheduled = true
-      flushTimeoutId = setTimeout(() => {
-        flushChunkBuffer()
-      }, FLUSH_INTERVAL_MS)
+      // Adaptive batch size:
+      //  - Queue short (< 5): drip all (for slow providers like Ollama)
+      //  - Queue medium (5-100): drip 2-4 chars (smooth typing feel)
+      //  - Queue long (100+): drip more to gradually catch up
+      let batchSize: number
+      if (pendingText.length <= 4) {
+        batchSize = pendingText.length
+      } else if (pendingText.length < 100) {
+        batchSize = 3
+      } else {
+        batchSize = Math.min(Math.ceil(pendingText.length / 15), 25)
+      }
+
+      const batch = pendingText.slice(0, batchSize)
+      pendingText = pendingText.slice(batchSize)
+      displayedContent += batch
+
+      get().updateStreamingMessage(assistantMessageId, displayedContent)
+    }
+
+    const startDrip = () => {
+      if (!dripIntervalId) {
+        dripIntervalId = setInterval(dripTick, DRIP_MS)
+      }
     }
 
     const cleanup = () => {
-      console.log('Cleaning up event listeners for message:', assistantMessageId)
-      // Flush any remaining content
-      if (flushTimeoutId) clearTimeout(flushTimeoutId)
-      flushChunkBuffer()
-
+      if (dripIntervalId) { clearInterval(dripIntervalId); dripIntervalId = null }
+      // Flush any remaining pending text immediately
+      if (pendingText.length > 0) {
+        displayedContent += pendingText
+        pendingText = ''
+        get().updateStreamingMessage(assistantMessageId, displayedContent)
+      }
       if (unlistenChunk) unlistenChunk()
       if (unlistenError) unlistenError()
       if (unlistenComplete) unlistenComplete()
@@ -365,12 +358,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     try {
-      let persisted = false
-      console.log('Setting up event listeners for message:', assistantMessageId)
       // Listen for stream start to get stream ID
       unlistenStreamStart = await listen('chat:stream-start', (event: any) => {
         const { stream_id } = event.payload as { stream_id: string }
-        console.log('Stream started with ID:', stream_id)
+
         currentStreamId = stream_id
         const currentState = get()
         currentState.setStreaming(true, assistantMessageId, stream_id)
@@ -379,7 +370,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Listen for tool start
       unlistenToolStart = await listen('chat:tool-start', (event: any) => {
         const payload = event.payload as { stream_id: string, tool: string, args: any }
-        console.log('🛠️ Tool Start:', payload)
+
         if (payload.stream_id === currentStreamId) {
           get().updateMessageToolCalls(assistantMessageId, {
             id: `tool_${Date.now()}_${Math.random()}`,
@@ -393,7 +384,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
       // Listen for cancellation
       unlistenCancelled = await listen('chat:cancelled', (event: any) => {
         const { stream_id } = event.payload as { stream_id: string }
-        console.log('Stream cancelled:', stream_id)
+
         if (stream_id === currentStreamId) {
           const currentState = get()
           currentState.setStreaming(false)
@@ -402,7 +393,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       })
       // Set up event listeners for streaming
       unlistenChunk = await listen('chat:chunk', (event: any) => {
-        const chunk = event.payload as { message?: { role?: string; content?: string }; done?: boolean }
+        const chunk = event.payload as { stream_id?: string; message?: { role?: string; content?: string }; done?: boolean }
+
+        // Filter by stream_id to prevent auto-title or other streams from leaking in
+        if (chunk.stream_id && currentStreamId && chunk.stream_id !== currentStreamId) return
 
         // Only process chunks for the currently streaming assistant message
         const currentState = get()
@@ -410,7 +404,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           return
         }
 
-        // If we receive content, mark any previous tool calls as done and buffer it
+        // If we receive content, mark any previous tool calls as done and queue it
         const part = chunk?.message?.content ?? ''
         if (part.length > 0) {
           const currentMsg = currentState.messages.find(m => m.id === assistantMessageId)
@@ -418,52 +412,25 @@ export const useChatStore = create<ChatState>((set, get) => ({
             currentState.markToolCallsDone(assistantMessageId)
           }
 
-          // Buffer the chunk instead of updating immediately
-          chunkBuffer += part
-          scheduleFlush()
+          // Queue the text for dripping (don't update state directly)
+          pendingText += part
+          startDrip()
         }
 
-        // If the provider sends done=true, flush immediately and finalize
+        // If the provider sends done=true, signal the drip to finalize when empty
         if (chunk?.done) {
-          // Clear pending flush and flush immediately
-          if (flushTimeoutId) clearTimeout(flushTimeoutId)
-          flushChunkBuffer()
-
-          const finalState = get()
-          finalState.setStreaming(false)
-          // Also mark tools done if any
-          finalState.markToolCallsDone(assistantMessageId)
-
-          const currentMessage = finalState.messages.find(m => m.id === assistantMessageId)
-          if (currentMessage) {
-            finalState.updateMessage(assistantMessageId, currentMessage.content || '')
-            // Persist assistant message once
-            if (!persisted && chatId) {
-              invoke('db_append_message', { chatId, role: 'assistant', content: currentMessage.content || '', metaJson: null })
-                .then(() => window.dispatchEvent(new CustomEvent('chats-refresh')))
-                .catch((e) => console.warn('db_append_message (assistant) failed', e))
-              persisted = true
-            }
+          streamDone = true
+          // If nothing is pending, finalize immediately
+          if (pendingText.length === 0) {
+            dripTick()
           }
-
-          // Check triggers (in case complete event is skipped/too late)
-          const stateAfter = get()
-          if (stateAfter.messages.length <= 5 && chatId) {
-            const userMsg = stateAfter.messages.find(m => m.role === 'user')
-            if (userMsg && !stateAfter.currentSystemPrompt?.includes('Generate a short')) {
-              stateAfter.generateAutoTitle(chatId, userMsg.content).catch(console.error)
-            }
-          }
-
-          cleanup()
         }
       })
 
       unlistenError = await listen('chat:error', (event: any) => {
-        console.error('Chat error:', event.payload)
+
         const payload = event.payload as { stream_id?: string; error?: string }
         if (payload?.stream_id && payload.stream_id !== currentStreamId) {
-          console.warn('Ignoring error from different stream:', payload.stream_id)
           return
         }
         state.setStreaming(false)
@@ -482,48 +449,15 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       unlistenComplete = await listen('chat:complete', (event: any) => {
         const payload = event.payload as { completed: boolean; stream_id?: string }
-        console.log('Stream completion event:', payload)
 
         // Only process completion for the current stream
-        if (payload.stream_id && payload.stream_id !== currentStreamId) {
-          console.warn('Ignoring completion from different stream:', payload.stream_id)
-          return
-        }
+        if (payload.stream_id && payload.stream_id !== currentStreamId) return
 
-        if (!payload.completed) {
-          console.warn('Stream completed but not successfully')
-        }
-
-        // Always stop streaming when we get completion signal for our stream
-        const currentState = get()
-        if (currentState.isStreaming && currentState.streamingMessageId === assistantMessageId) {
-          console.log('Stopping stream due to completion event')
-          currentState.setStreaming(false)
-          currentState.markToolCallsDone(assistantMessageId)
-
-          // Remove isStreaming flag from the message using updateMessage
-          const currentMessage = currentState.messages.find(m => m.id === assistantMessageId)
-          if (currentMessage) {
-            currentState.updateMessage(assistantMessageId, currentMessage.content)
-            // Persist assistant message once if not yet persisted
-            if (!persisted && chatId) {
-              invoke('db_append_message', { chatId, role: 'assistant', content: currentMessage.content || '', metaJson: null })
-                .then(() => window.dispatchEvent(new CustomEvent('chats-refresh')))
-                .catch((e) => console.warn('db_append_message (assistant) failed', e))
-              persisted = true
-            }
-          }
-        }
-        cleanup()
-
-        // Check triggers
-        const finalState = get()
-        if (finalState.messages.length <= 5 && chatId) {
-          const userMsg = finalState.messages.find(m => m.role === 'user')
-          if (userMsg && !finalState.currentSystemPrompt?.includes('Generate a short')) {
-            // Avoid recursion
-            finalState.generateAutoTitle(chatId, userMsg.content).catch(console.error)
-          }
+        // Signal that the stream is done — drip tick will handle finalization
+        // when the pending queue is empty
+        streamDone = true
+        if (pendingText.length === 0) {
+          dripTick() // Finalize immediately if nothing pending
         }
       })
 
@@ -638,6 +572,9 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     set({ messages: truncatedMessages })
 
+    // Yield to main thread to allow UI to update and prevent freeze
+    await new Promise(resolve => setTimeout(resolve, 10))
+
     // 3. Trigger Generation (Re-use logic from sendMessage mostly)
 
     // Add assistant message placeholder - use get() for fresh state!
@@ -650,8 +587,56 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     let currentStreamId: string | null = null
 
-    // --- Listener Implementation (Duplicate of sendMessage) ---
-    // Ideally this should be refactored into a reusable `generateResponse` function
+    // ── ChatGPT-style character drip queue (same as sendMessage) ──
+    let pendingText = ''
+    let displayedContent = ''
+    let dripIntervalId: ReturnType<typeof setInterval> | null = null
+    let streamDone = false
+    let persisted = false
+    const DRIP_MS = 30
+
+    const dripTick = () => {
+      if (pendingText.length === 0) {
+        if (streamDone) {
+          if (dripIntervalId) { clearInterval(dripIntervalId); dripIntervalId = null }
+          const finalState = get()
+          finalState.setStreaming(false)
+          finalState.markToolCallsDone(assistantMessageId)
+          const currentMessage = finalState.messages.find(m => m.id === assistantMessageId)
+          if (currentMessage) {
+            finalState.updateMessage(assistantMessageId, displayedContent)
+            if (!persisted && chatId) {
+              invoke('db_append_message', { chatId, role: 'assistant', content: displayedContent, metaJson: null })
+                .then(() => window.dispatchEvent(new CustomEvent('chats-refresh')))
+                .catch(() => { })
+              persisted = true
+            }
+          }
+          cleanup()
+        }
+        return
+      }
+
+      let batchSize: number
+      if (pendingText.length <= 4) {
+        batchSize = pendingText.length
+      } else if (pendingText.length < 100) {
+        batchSize = 3
+      } else {
+        batchSize = Math.min(Math.ceil(pendingText.length / 15), 25)
+      }
+
+      const batch = pendingText.slice(0, batchSize)
+      pendingText = pendingText.slice(batchSize)
+      displayedContent += batch
+      get().updateStreamingMessage(assistantMessageId, displayedContent)
+    }
+
+    const startDrip = () => {
+      if (!dripIntervalId) {
+        dripIntervalId = setInterval(dripTick, DRIP_MS)
+      }
+    }
 
     let unlistenChunk: (() => void) | null = null
     let unlistenError: (() => void) | null = null
@@ -661,7 +646,12 @@ export const useChatStore = create<ChatState>((set, get) => ({
     let unlistenToolStart: (() => void) | null = null
 
     const cleanup = () => {
-      console.log('Cleaning up event listeners for message:', assistantMessageId)
+      if (dripIntervalId) { clearInterval(dripIntervalId); dripIntervalId = null }
+      if (pendingText.length > 0) {
+        displayedContent += pendingText
+        pendingText = ''
+        get().updateStreamingMessage(assistantMessageId, displayedContent)
+      }
       if (unlistenChunk) unlistenChunk()
       if (unlistenError) unlistenError()
       if (unlistenComplete) unlistenComplete()
@@ -671,8 +661,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
     }
 
     try {
-      let persisted = false
-
       unlistenStreamStart = await listen('chat:stream-start', (event: any) => {
         const { stream_id } = event.payload as { stream_id: string }
         currentStreamId = stream_id
@@ -681,7 +669,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
       unlistenToolStart = await listen('chat:tool-start', (event: any) => {
         const payload = event.payload as { stream_id: string, tool: string, args: any }
-        console.log('🛠️ Tool Start:', payload)
         if (payload.stream_id === currentStreamId) {
           get().updateMessageToolCalls(assistantMessageId, {
             id: `tool_${Date.now()}_${Math.random()}`,
@@ -701,7 +688,10 @@ export const useChatStore = create<ChatState>((set, get) => ({
       })
 
       unlistenChunk = await listen('chat:chunk', (event: any) => {
-        const chunk = event.payload as { message?: { role?: string; content?: string }; done?: boolean }
+        const chunk = event.payload as { stream_id?: string; message?: { role?: string; content?: string }; done?: boolean }
+
+        if (chunk.stream_id && currentStreamId && chunk.stream_id !== currentStreamId) return
+
         const currentState = get()
         if (currentState.streamingMessageId !== assistantMessageId) return
 
@@ -712,34 +702,19 @@ export const useChatStore = create<ChatState>((set, get) => ({
             currentState.markToolCallsDone(assistantMessageId)
           }
 
-          const currentMessage = currentState.messages.find(m => m.id === assistantMessageId)
-          if (currentMessage) {
-            currentState.updateStreamingMessage(assistantMessageId, (currentMessage.content || '') + part)
-          }
+          pendingText += part
+          startDrip()
         }
 
         if (chunk?.done) {
-          const finalState = get()
-          finalState.setStreaming(false)
-          finalState.markToolCallsDone(assistantMessageId)
-          const currentMessage = finalState.messages.find(m => m.id === assistantMessageId)
-          if (currentMessage) {
-            finalState.updateMessage(assistantMessageId, currentMessage.content || '')
-            if (!persisted && chatId) {
-              invoke('db_append_message', { chatId, role: 'assistant', content: currentMessage.content || '', metaJson: null })
-                .then(() => window.dispatchEvent(new CustomEvent('chats-refresh')))
-                .catch((e) => console.warn('db_append_message (assistant) failed', e))
-              persisted = true
-            }
-          }
-          cleanup()
+          streamDone = true
+          if (pendingText.length === 0) dripTick()
         }
       })
 
       unlistenError = await listen('chat:error', (event: any) => {
         const payload = event.payload as { stream_id?: string; error?: string }
         if (payload?.stream_id && payload.stream_id !== currentStreamId) return
-
         const st = get()
         st.setStreaming(false)
         const currentMessage = st.messages.find(m => m.id === assistantMessageId)
@@ -752,85 +727,40 @@ export const useChatStore = create<ChatState>((set, get) => ({
       unlistenComplete = await listen('chat:complete', (event: any) => {
         const payload = event.payload as { completed: boolean; stream_id?: string }
         if (payload.stream_id && payload.stream_id !== currentStreamId) return
-
-        const st = get()
-        if (st.isStreaming && st.streamingMessageId === assistantMessageId) {
-          st.setStreaming(false)
-          st.markToolCallsDone(assistantMessageId)
-          const currentMessage = st.messages.find(m => m.id === assistantMessageId)
-          if (currentMessage) {
-            st.updateMessage(assistantMessageId, currentMessage.content)
-            if (!persisted && chatId) {
-              invoke('db_append_message', { chatId, role: 'assistant', content: currentMessage.content || '', metaJson: null })
-                .then(() => window.dispatchEvent(new CustomEvent('chats-refresh')))
-                .catch((e) => console.warn('db_append_message (assistant) failed', e))
-              persisted = true
-            }
-          }
-        }
-        cleanup()
+        streamDone = true
+        if (pendingText.length === 0) dripTick()
       })
 
       get().setStreaming(true, assistantMessageId)
 
-      // Prepare messages
+      // Prepare messages + resolve provider
       const latest = get()
       const apiMessages = latest.messages
         .filter(msg => msg.role !== 'assistant' || msg.content.trim() !== '')
-        .map(msg => ({
-          role: msg.role,
-          content: msg.content,
-          images: msg.images,
-        }))
+        .map(msg => ({ role: msg.role, content: msg.content, images: msg.images }))
 
-      const freshState = get()
-      if (freshState.currentSystemPrompt) {
-        apiMessages.unshift({ role: 'system', content: freshState.currentSystemPrompt, images: undefined })
+      if (latest.currentSystemPrompt) {
+        apiMessages.unshift({ role: 'system', content: latest.currentSystemPrompt, images: undefined })
       }
 
-      // Get active provider ID from settings
-      const { activeProviderId, providers } = useSettingsStore.getState()
-
-      // If the current model is an Ollama model, we should prefer the Ollama provider
-      // But if the user explicitly selected a Cloud provider, we might have a conflict if they try to pick a local model?
-      // For now, let's trust the activeProviderId, BUT if the mode is 'local', we should force Ollama-default?
-      // Actually, let's keep it simple: pass the activeProviderId.
-      // However, the issue described by user ("Using provider: GroqCloud (Other)") when they want local implies
-      // activeProviderId might be set to Groq. 
-      // We should probably check if the model exists in the active provider? 
-      // Or relies on the UI to switch providers when switching models?
-      // Current UI has a "Mode" switch (Local/Cloud).
-
-      const { appMode } = useSettingsStore.getState()
+      const { activeProviderId, providers, appMode } = useSettingsStore.getState()
       const { models } = useModelsStore.getState()
       let providerId = activeProviderId
-
-      // Intelligent Provider Selection
-      // 1. If the model is in our known local Ollama models list, force Ollama provider
       const currentModel = get().currentModel
       const isLocalModel = models.some(m => m.name === currentModel)
       const ollamaProvider = providers.find(p => p.provider_type === 'ollama')
-
       if (isLocalModel && ollamaProvider) {
         providerId = ollamaProvider.id
       } else if (appMode === 'local' && ollamaProvider) {
-        // Fallback: If we are strictly in local mode, default to Ollama
         providerId = ollamaProvider.id
       }
-      // Otherwise use the active (Cloud) provider
 
       await invoke('chat_stream', {
-        request: {
-          model: currentModel,
-          messages: apiMessages,
-          stream: true,
-          options: undefined // Use defaults for edit regenerate for now
-        },
-        providerId: providerId
+        request: { model: currentModel, messages: apiMessages, stream: true },
+        providerId
       })
 
     } catch (error) {
-      console.error('Failed to regenerate message:', error)
       get().setStreaming(false)
       get().updateMessage(assistantMessageId, `Error: ${error}`)
       cleanup()
@@ -867,28 +797,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
     // Select the best model for titling (prefer text models over vision/small models if available)
     const { models } = useModelsStore.getState()
-    // Prioritize fast, instruction-following models. Avoid reasoning models (r1) if possible for this simple task.
-    const preferredTextModels = ['llama3.2', 'mistral', 'gemma2', 'qwen2.5-coder', 'qwen2.5', 'llama3.1', 'phi', 'tinyllama']
 
     let titleModel = state.currentModel
 
-    // If current model is likely a VLM or very small, try to find a better text model
+    // If current model is likely a VLM, try to find a small text model (avoid switching to huge models like 70b)
     const isVLM = ['moondream', 'llava', 'vl'].some(k => state.currentModel.includes(k))
 
     if (isVLM) {
-      // Try to find a non-reasoning model first
-      let betterModel = models.find(m =>
-        preferredTextModels.some(p => m.name.includes(p)) && !m.name.includes('r1')
-      )
+      // Try to find a small text model (llama3.2, phi, tinyllama, qwen2.5 < 7b)
+      const smallModels = ['llama3.2', 'phi', 'tinyllama', 'qwen2.5:0.5b', 'qwen2.5:1.5b', 'gemma2:2b']
+      let betterModel = models.find(m => smallModels.some(sm => m.name.includes(sm)))
 
-      // Fallback to reasoning models if no other choice (e.g. only deepseek-r1 installed)
-      if (!betterModel) {
-        betterModel = models.find(m => preferredTextModels.some(p => m.name.includes(p)) || m.name.includes('deepseek'))
-      }
-
+      // If no small model found, just stick to current model to avoid surprise 70b loads
       if (betterModel) {
         titleModel = betterModel.name
-        console.log('🧠 Switching to better text model for titling:', titleModel)
+        console.log('🧠 Switching to small text model for titling:', titleModel)
       }
     }
 

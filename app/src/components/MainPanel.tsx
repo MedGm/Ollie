@@ -1,4 +1,4 @@
-import { ArrowUp, Square, ArrowDown, Paperclip, X, FileText } from 'lucide-react'
+import { ArrowUp, Square, ArrowDown, Paperclip, X, FileText, Search, Brain } from 'lucide-react'
 import { useState, useEffect, useRef } from 'react'
 import { useChatStore } from '../store/chatStore'
 import Message from './Message'
@@ -13,22 +13,19 @@ export default function MainPanel() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Subscribe to all relevant state to force re-renders
+  // Subscribe to relevant state
   const {
     messages,
     sendMessage,
     currentModel,
     isStreaming,
-    updateCounter,
-    lastUpdate,
     stopStreaming
   } = useChatStore()
 
-  // Add debugging for re-renders
-  console.log(' MainPanel render - message count:', messages.length, 'updateCounter:', updateCounter, 'lastUpdate:', lastUpdate)
-
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
-    messagesEndRef.current?.scrollIntoView({ behavior })
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior })
+    })
     setShouldAutoScroll(true)
     setShowScrollButton(false)
   }
@@ -44,11 +41,12 @@ export default function MainPanel() {
     setShowScrollButton(!isNearBottom)
   }
 
+  // Scroll when new messages are added (not on every streaming chunk)
   useEffect(() => {
     if (shouldAutoScroll) {
       scrollToBottom('smooth')
     }
-  }, [messages, updateCounter, shouldAutoScroll]) // Depend on messages AND updateCounter (for streaming)
+  }, [messages.length, shouldAutoScroll])
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -178,60 +176,68 @@ export default function MainPanel() {
                 }
               </p>
 
-              {/* Quick Start Examples */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+              {/* Quick Start Examples - Minimalist Design */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-4xl mx-auto">
                 <button
                   onClick={() => setMessage('Explain how this code works')}
-                  className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 hover:from-blue-100 hover:to-indigo-100 border border-blue-200 rounded-2xl text-left transition-all duration-200 group hover:shadow-lg hover:-translate-y-1"
+                  className="p-5 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-left transition-all duration-200 group hover:shadow-md"
                   disabled={!currentModel}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full mt-2 flex-shrink-0 group-hover:scale-110 transition-transform"></div>
+                    <div className="p-2 bg-blue-50 text-blue-600 rounded-lg group-hover:bg-blue-100 transition-colors">
+                      <FileText size={20} />
+                    </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2 text-lg">Explain code</h3>
-                      <p className="text-sm text-gray-600">Help me understand how a function or algorithm works</p>
+                      <h3 className="font-medium text-gray-900 mb-1">Explain code</h3>
+                      <p className="text-sm text-gray-500">Understand functions & algorithms</p>
                     </div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setMessage('Write a professional email')}
-                  className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 hover:from-green-100 hover:to-emerald-100 border border-green-200 rounded-2xl text-left transition-all duration-200 group hover:shadow-lg hover:-translate-y-1"
+                  className="p-5 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-left transition-all duration-200 group hover:shadow-md"
                   disabled={!currentModel}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-3 h-3 bg-green-500 rounded-full mt-2 flex-shrink-0 group-hover:scale-110 transition-transform"></div>
+                    <div className="p-2 bg-green-50 text-green-600 rounded-lg group-hover:bg-green-100 transition-colors">
+                      <FileText size={20} />
+                    </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2 text-lg">Write content</h3>
-                      <p className="text-sm text-gray-600">Create professional emails, articles, or documents</p>
+                      <h3 className="font-medium text-gray-900 mb-1">Write content</h3>
+                      <p className="text-sm text-gray-500">Draft emails & documents</p>
                     </div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setMessage('Help me analyze this data')}
-                  className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 hover:from-purple-100 hover:to-violet-100 border border-purple-200 rounded-2xl text-left transition-all duration-200 group hover:shadow-lg hover:-translate-y-1"
+                  className="p-5 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-left transition-all duration-200 group hover:shadow-md"
                   disabled={!currentModel}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-3 h-3 bg-purple-500 rounded-full mt-2 flex-shrink-0 group-hover:scale-110 transition-transform"></div>
+                    <div className="p-2 bg-purple-50 text-purple-600 rounded-lg group-hover:bg-purple-100 transition-colors">
+                      <Search size={20} />
+                    </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2 text-lg">Analyze data</h3>
-                      <p className="text-sm text-gray-600">Help me find patterns and insights in datasets</p>
+                      <h3 className="font-medium text-gray-900 mb-1">Analyze data</h3>
+                      <p className="text-sm text-gray-500">Find patterns & insights</p>
                     </div>
                   </div>
                 </button>
 
                 <button
                   onClick={() => setMessage('What is machine learning?')}
-                  className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 border border-orange-200 rounded-2xl text-left transition-all duration-200 group hover:shadow-lg hover:-translate-y-1"
+                  className="p-5 bg-white border border-gray-200 hover:border-gray-300 rounded-xl text-left transition-all duration-200 group hover:shadow-md"
                   disabled={!currentModel}
                 >
                   <div className="flex items-start gap-4">
-                    <div className="w-3 h-3 bg-orange-500 rounded-full mt-2 flex-shrink-0 group-hover:scale-110 transition-transform"></div>
+                    <div className="p-2 bg-orange-50 text-orange-600 rounded-lg group-hover:bg-orange-100 transition-colors">
+                      <Brain size={20} />
+                    </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900 mb-2 text-lg">Answer questions</h3>
-                      <p className="text-sm text-gray-600">Get detailed explanations on any topic</p>
+                      <h3 className="font-medium text-gray-900 mb-1">Answer questions</h3>
+                      <p className="text-sm text-gray-500">Detailed explanations</p>
                     </div>
                   </div>
                 </button>
@@ -264,7 +270,7 @@ export default function MainPanel() {
 
       {/* Input Area - constrained to max 40% of height */}
       <div className="border-t border-gray-100 bg-gray-50/50 backdrop-blur-sm flex-shrink-0 max-h-[40vh] overflow-y-auto">
-        <div className="w-full max-w-4xl mx-auto p-6 sm:p-8">
+        <div className="w-full max-w-3xl mx-auto p-4 sm:p-6">
           <div className="relative">
             {/* Attachment Preview Area */}
             {attachments.length > 0 && (
@@ -292,14 +298,15 @@ export default function MainPanel() {
               </div>
             )}
 
-            <div className="flex items-end gap-3 bg-white border border-gray-200 rounded-3xl p-4 focus-within:ring-2 focus-within:ring-gray-900 focus-within:border-transparent shadow-sm transition-all duration-200">
+            {/* Enhanced Floating Input Bar */}
+            <div className="flex items-end gap-2 bg-white border border-gray-200/60 rounded-[26px] p-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] focus-within:ring-2 focus-within:ring-gray-900/5 focus-within:border-gray-300 transition-all duration-300">
               <button
-                className="p-2 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-colors"
+                className="p-2 mb-1.5 text-gray-400 hover:text-gray-900 hover:bg-gray-100 rounded-full transition-colors"
                 title="Attach image or file"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!currentModel || isStreaming}
               >
-                <Paperclip size={20} />
+                <Paperclip size={20} className="stroke-[2]" />
               </button>
               <input
                 type="file"
@@ -309,21 +316,21 @@ export default function MainPanel() {
                 onChange={handleFileSelect}
               />
 
-              <div className="flex-1">
+              <div className="flex-1 py-2">
                 <textarea
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   onKeyDown={handleKeyDown}
                   onInput={handleInput}
                   placeholder={currentModel ? "Message Ollie..." : "Select a model to start chatting"}
-                  className="w-full resize-none bg-transparent focus:outline-none text-gray-900 placeholder-gray-500 text-base leading-7"
-                  style={{ minHeight: '28px', maxHeight: '200px' }}
+                  className="w-full resize-none bg-transparent focus:outline-none text-gray-900 placeholder-gray-400 text-[15px] leading-6 max-h-[200px]"
+                  style={{ minHeight: '24px' }}
                   rows={1}
                   disabled={!currentModel || isStreaming}
                 />
               </div>
               <button
-                className={`p-3 rounded-2xl transition-all duration-200 ${isStreaming
+                className={`p-2 mb-1 rounded-full transition-all duration-200 ${isStreaming
                   ? 'bg-red-600 hover:bg-red-700 text-white shadow-lg'
                   : (message.trim() || attachments.length > 0) && currentModel
                     ? 'bg-gray-900 hover:bg-gray-800 text-white shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
@@ -341,11 +348,11 @@ export default function MainPanel() {
             </div>
           </div>
 
-          <div className="flex justify-center mt-4">
-            <p className="text-xs text-gray-500">
+          <div className="flex justify-center mt-3 mb-2">
+            <p className="text-[11px] text-gray-400 font-medium tracking-wide">
               {currentModel
                 ? 'Ollie can make mistakes. Consider checking important information.'
-                : 'Select a model from the dropdown above to start chatting'
+                : 'Select a model to start chatting'
               }
             </p>
           </div>

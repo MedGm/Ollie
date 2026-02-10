@@ -3,6 +3,8 @@ mod db;
 mod mcp;
 mod providers;
 
+use tauri::Manager;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -16,6 +18,7 @@ pub fn run() {
       commands::chat::chat_cancel,
       commands::models::models_list,
       commands::models::model_pull,
+      commands::models::model_pull_cancel,
       commands::models::model_delete,
       commands::models::model_show,
       commands::settings::settings_get,
@@ -56,6 +59,8 @@ pub fn run() {
             .build(),
         )?;
       }
+
+      app.manage(std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::<String, std::sync::Arc<std::sync::atomic::AtomicBool>>::new())));
       Ok(())
     })
     .run(tauri::generate_context!())

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useModelsStore } from '../store/modelsStore'
-import { Download, Trash2, Info, Check } from 'lucide-react'
+import { Download, Trash2, Info, Check, X } from 'lucide-react'
 import { useChatStore } from '../store/chatStore'
 import { useSettingsStore } from '../store/settingsStore'
 import ProgressBar from './ProgressBar'
@@ -75,6 +75,15 @@ export default function ModelPicker() {
 									<div className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">
 										{p.status}
 									</div>
+									{p.status !== 'complete' && p.status !== 'error' && (
+										<button
+											onClick={() => useModelsStore.getState().cancelPull(id)}
+											className="p-1 hover:bg-gray-100 rounded text-gray-400 hover:text-red-500 transition-colors"
+											title="Stop download"
+										>
+											<X size={14} />
+										</button>
+									)}
 								</div>
 							</div>
 							{p.progress && (
