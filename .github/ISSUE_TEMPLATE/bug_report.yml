@@ -1,0 +1,81 @@
+name: Bug report
+description: Something isn't working right
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output / logs
+      description: Terminal output, stack trace, or anything printed when it crashed. Paste as text, not a screenshot, if possible.
+      render: shell
+
+  - type: input
+    id: version
+    attributes:
+      label: Ollie version
+      placeholder: e.g. v0.2.10
+    validations:
+      required: true
+
+  - type: input
+    id: distro
+    attributes:
+      label: OS / distro
+      placeholder: e.g. Ubuntu 26.04, Fedora Silverblue 42
+    validations:
+      required: true
+
+  - type: dropdown
+    id: session
+    attributes:
+      label: Display session type
+      description: "Run `echo $XDG_SESSION_TYPE` if you're not sure"
+      options:
+        - Wayland
+        - X11
+        - Not sure
+    validations:
+      required: true
+
+  - type: input
+    id: compositor
+    attributes:
+      label: Desktop environment / compositor
+      placeholder: e.g. GNOME, KDE Plasma, Niri, Sway
+
+  - type: input
+    id: gpu
+    attributes:
+      label: GPU / driver
+      placeholder: e.g. AMD Radeon 860M / Mesa 25.2, Intel Iris Xe, NVIDIA proprietary
+
+  - type: dropdown
+    id: install
+    attributes:
+      label: Install method
+      options:
+        - AppImage
+        - .deb
+        - .rpm
+        - Built from source
+    validations:
+      required: true
