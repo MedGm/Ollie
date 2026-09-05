@@ -2,7 +2,8 @@ use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use uuid::Uuid;
-use crate::commands::settings::{settings_get, provider_get_active};
+use crate::commands::settings::{settings_get_inner, provider_get_active_inner};
+use crate::secrets;
 use crate::providers::{ProviderType, ChatMessage as ProviderChatMessage, ChatOptions as ProviderChatOptions};
 use crate::providers::traits::LLMProvider;
 use crate::providers::orchestrator::ChatOrchestrator;
@@ -49,16 +50,17 @@ pub async fn chat_stream(
     provider_id: Option<String>,
     streams: tauri::State<'_, crate::AppStreams>,
     mcp_clients: tauri::State<'_, crate::McpClients>,
+    keyring: tauri::State<'_, secrets::KeyringState>,
 ) -> Result<ChatResponse, String> {
     
     // 1. Resolve Provider Configuration
     let provider_config = if let Some(pid) = provider_id {
-        let settings = settings_get().await?;
+        let settings = settings_get_inner(keyring.0.as_ref()).await?;
         settings.providers.into_iter()
             .find(|p| p.id == pid)
             .ok_or_else(|| format!("Provider '{}' not found", pid))?
     } else {
-        provider_get_active().await?
+        provider_get_active_inner(keyring.0.as_ref()).await?
     };
 
     println!("Using provider: {} ({:?})", provider_config.name, provider_config.provider_type);
