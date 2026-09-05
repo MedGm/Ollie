@@ -77,6 +77,22 @@ pub fn run() {
       app.manage(AppStreams::default());
       app.manage(MonitoringState::default());
       app.manage(McpClients::default());
+      app.manage(secrets::KeyringState(std::sync::Arc::new(secrets::SystemKeyring)));
+
+      {
+        let handle = app.handle().clone();
+        tauri::async_runtime::spawn(async move {
+          let keyring_state = handle.state::<secrets::KeyringState>();
+          match commands::settings::settings_get_inner(keyring_state.0.as_ref()).await {
+            Ok(settings) => {
+              if let Err(e) = commands::settings::settings_set_inner(settings, keyring_state.0.as_ref()).await {
+                log::warn!("startup settings migration failed: {}", e);
+              }
+            }
+            Err(e) => log::warn!("startup settings read failed, skipping migration: {}", e),
+          }
+        });
+      }
 
       // Disable GPU/hardware acceleration at the WebKit API level.
       // Prevents EGL initialization entirely — fixes Ubuntu 26.04 / Mesa 25+
