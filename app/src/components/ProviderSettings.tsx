@@ -19,7 +19,8 @@ export default function ProviderSettings() {
         updateProvider,
         deleteProvider,
         setActiveProviderId,
-        loadSettingsFromBackend
+        loadSettingsFromBackend,
+        keyringAvailable
     } = useSettingsStore();
 
     const [loading, setLoading] = useState(false);
@@ -149,6 +150,14 @@ export default function ProviderSettings() {
             {error && (
                 <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
                     {error}
+                </div>
+            )}
+
+            {!keyringAvailable && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
+                    No system keyring detected — API keys are stored in plaintext. Install{' '}
+                    <code className="px-1 bg-amber-100 rounded">gnome-keyring</code> or{' '}
+                    <code className="px-1 bg-amber-100 rounded">kwallet</code> for secure storage.
                 </div>
             )}
 
