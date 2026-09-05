@@ -40,3 +40,4 @@ bytes = "1.0"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 webkit2gtk = { version = "2.0.2", features = ["v2_22"] }
+keyring = { version = "3", default-features = false, features = ["sync-secret-service", "crypto-openssl"] }

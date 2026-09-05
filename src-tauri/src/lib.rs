@@ -2,6 +2,7 @@ mod commands;
 mod db;
 mod mcp;
 mod providers;
+mod secrets;
 
 use tauri::Manager;
 
