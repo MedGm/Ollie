@@ -27,6 +27,7 @@ interface SettingsState {
   // Mode selection
   appMode: 'local' | 'cloud'
   setupCompleted: boolean
+  keyringAvailable: boolean
 
   // Provider management
   providers: ProviderConfig[]
@@ -71,6 +72,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
       theme: 'light',
       appMode: 'local',
       setupCompleted: false,
+      keyringAvailable: true,
       providers: [],
       activeProviderId: 'ollama-default',
 
@@ -206,6 +208,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
             setup_completed?: boolean
             providers?: ProviderConfig[]
             active_provider_id?: string
+            keyring_available?: boolean
           }
           const s = await invoke<BackendSettings>('settings_get')
 
@@ -237,6 +240,7 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
             setupCompleted: s.setup_completed ?? false,
             providers: s.providers || [],
             activeProviderId: s.active_provider_id || 'ollama-default',
+            keyringAvailable: s.keyring_available ?? true,
           })
         } catch (e) {
           console.warn('settings_get failed; using local settings', e)
