@@ -1,5 +1,9 @@
+#[cfg(test)]
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::Arc;
+#[cfg(test)]
+use std::sync::Mutex;
+use std::sync::OnceLock;
 
 const SERVICE: &str = "ollie";
 const PROBE_ID: &str = "__ollie_probe__";
@@ -36,9 +40,11 @@ impl KeyringBackend for SystemKeyring {
     }
 }
 
+#[cfg(test)]
 #[derive(Default)]
 pub struct FakeKeyring(Mutex<HashMap<String, String>>);
 
+#[cfg(test)]
 impl KeyringBackend for FakeKeyring {
     fn get(&self, provider_id: &str) -> Result<Option<String>, String> {
         Ok(self.0.lock().unwrap().get(provider_id).cloned())
@@ -54,9 +60,11 @@ impl KeyringBackend for FakeKeyring {
 }
 
 /// Always returns `Err` — used in tests to exercise the fallback-to-plaintext path.
+#[cfg(test)]
 #[derive(Default)]
 pub struct FailingKeyring;
 
+#[cfg(test)]
 impl KeyringBackend for FailingKeyring {
     fn get(&self, _provider_id: &str) -> Result<Option<String>, String> { Err("keyring unavailable".into()) }
     fn set(&self, _provider_id: &str, _key: &str) -> Result<(), String> { Err("keyring unavailable".into()) }
@@ -73,7 +81,7 @@ static AVAILABLE: OnceLock<bool> = OnceLock::new();
 /// Cached probe — call from command handlers so the real Secret Service
 /// is only hit once per process, not once per settings read/write.
 pub fn is_available_cached(backend: &dyn KeyringBackend) -> bool {
-    *AVAILABLE.get_or_init(|| probe(backend))
+    *AVAILABLE.get_or_init(|| tokio::task::block_in_place(|| probe(backend)))
 }
 
 /// Tauri managed state wrapping whichever backend the app is running with.

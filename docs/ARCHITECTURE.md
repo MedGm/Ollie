@@ -75,13 +75,15 @@ When a future version changes the schema non-additively (rename column, restruct
 
 ## High Priority Issues
 
-### H1 — API keys stored plaintext
+### H1 — API keys stored plaintext ✅ DONE
 
 `~/.config/ollie/settings.json` contains all provider API keys in plaintext. Any process running as the user can read them.
 
 **Fix:** Store keys in OS keychain (libsecret on Linux, Keychain on macOS, Credential Manager on Windows). Reference by a non-sensitive ID in settings.json. Tauri has `tauri-plugin-stronghold` for encrypted local storage as an alternative.
 
 **Files to touch:** `src-tauri/src/commands/settings.rs`, `app/src/store/settingsStore.ts`.
+
+**Resolved:** Provider API keys are now stored in the OS Secret Service keyring via the `keyring` crate (`src-tauri/src/secrets.rs`), referenced from `settings.json` by provider ID only. When no keyring is available, keys fall back to plaintext in `settings.json` and the UI shows a warning banner in Provider Settings.
 
 ---
 
@@ -255,7 +257,7 @@ Phase 3 — Reliability
   M4  File size limits
 
 Phase 4 — Security
-  H1  OS keychain for API keys
+  H1  OS keychain for API keys        ✅ DONE (keyring crate, plaintext fallback + banner)
 
 Phase 5 — Polish
   H3  Provider capability abstraction
@@ -274,10 +276,10 @@ Phase 5 — Polish
 | Streaming pipeline | Extracted service, shared, render-throttled |
 | DB persistence | sqlx migrate framework, WAL mode |
 | Error handling | Opaque strings throughout (M2 pending) |
-| Security | API keys plaintext (H1 pending) |
+| Security | API keys in OS keyring (H1 done); plaintext fallback when no keyring |
 | State management | Tauri managed state + thin Zustand store |
 | Context management | trimToContextBudget in conversationService |
 | Settings | Backend single source of truth |
 | MCP reliability | No reconnection (M3 pending) |
-| Testing | Zero tests |
+| Testing | First Rust unit tests added (secrets.rs, settings.rs); otherwise none |
 | Performance | No HTTP pooling (M1 next), no pagination |

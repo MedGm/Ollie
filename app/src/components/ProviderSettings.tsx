@@ -153,9 +153,9 @@ export default function ProviderSettings() {
                 </div>
             )}
 
-            {!keyringAvailable && (
+            {!keyringAvailable && providers.some(p => p.provider_type !== 'ollama') && (
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-sm">
-                    No system keyring detected — API keys are stored in plaintext. Install{' '}
+                    No usable system keyring detected — API keys are stored in plaintext. Install{' '}
                     <code className="px-1 bg-amber-100 rounded">gnome-keyring</code> or{' '}
                     <code className="px-1 bg-amber-100 rounded">kwallet</code> for secure storage.
                 </div>

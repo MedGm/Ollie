@@ -111,13 +111,19 @@ pub fn run() {
         }
       }
 
-      if cfg!(debug_assertions) {
-        app.handle().plugin(
-          tauri_plugin_log::Builder::default()
-            .level(log::LevelFilter::Info)
-            .build(),
-        )?;
-      }
+      // Always register the log plugin so warnings (keyring failures, migration
+      // failures, etc.) are never silently dropped in release builds — a release
+      // build with no logging is how a keyring fallback-to-plaintext goes unnoticed.
+      let log_level = if cfg!(debug_assertions) {
+        log::LevelFilter::Info
+      } else {
+        log::LevelFilter::Warn
+      };
+      app.handle().plugin(
+        tauri_plugin_log::Builder::default()
+          .level(log_level)
+          .build(),
+      )?;
       Ok(())
     })
     .run(tauri::generate_context!())

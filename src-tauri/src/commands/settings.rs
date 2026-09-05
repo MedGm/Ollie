@@ -112,7 +112,7 @@ pub async fn settings_get_inner(keyring: &dyn secrets::KeyringBackend) -> Result
     if available {
         for p in settings.providers.iter_mut() {
             if p.provider_type != ProviderType::Ollama {
-                match keyring.get(&p.id) {
+                match tokio::task::block_in_place(|| keyring.get(&p.id)) {
                     Ok(Some(key)) => p.api_key = Some(key),
                     Ok(None) => {}
                     Err(e) => log::warn!("keyring get failed for provider {}: {}", p.id, e),
@@ -129,19 +129,37 @@ pub async fn settings_set_inner(settings: Settings, keyring: &dyn secrets::Keyri
     let available = secrets::is_available_cached(keyring);
 
     let mut disk_copy = settings.clone();
-    disk_copy.keyring_available = available;
+    let mut result = settings;
+
+    // Tracks the *actual* outcome of this write, not just the cached process-wide
+    // probe. If any provider's key fails to write to the keyring below, this flips
+    // to false so the value we return reflects the real-time fallback-to-plaintext
+    // that just happened, instead of the (possibly stale) cached probe result.
+    let mut actual_available = available;
 
     if available {
         for p in disk_copy.providers.iter_mut() {
             if p.provider_type != ProviderType::Ollama {
-                if let Some(key) = p.api_key.clone() {
-                    match keyring.set(&p.id, &key) {
-                        Ok(()) => p.api_key = None,
-                        Err(e) => {
-                            log::warn!(
-                                "keyring set failed for provider {}, falling back to plaintext: {}",
-                                p.id, e
-                            );
+                match p.api_key.clone() {
+                    Some(key) => {
+                        match tokio::task::block_in_place(|| keyring.set(&p.id, &key)) {
+                            Ok(()) => p.api_key = None,
+                            Err(e) => {
+                                log::warn!(
+                                    "keyring set failed for provider {}, falling back to plaintext: {}",
+                                    p.id, e
+                                );
+                                actual_available = false;
+                            }
+                        }
+                    }
+                    None => {
+                        // Nothing to write for this provider — but a stale key may
+                        // already live in the keyring from a previous save. Delete
+                        // it so a cleared API key actually stays cleared instead of
+                        // being silently re-read back on the next settings_get.
+                        if let Err(e) = tokio::task::block_in_place(|| keyring.delete(&p.id)) {
+                            log::warn!("keyring delete failed for provider {}: {}", p.id, e);
                         }
                     }
                 }
@@ -149,12 +167,21 @@ pub async fn settings_set_inner(settings: Settings, keyring: &dyn secrets::Keyri
         }
     }
 
+    disk_copy.keyring_available = actual_available;
+    result.keyring_available = actual_available;
+
     let content = serde_json::to_string_pretty(&disk_copy).map_err(|e| format!("Serialize settings failed: {}", e))?;
     let tmp_path = path.with_extension("json.tmp");
     fs::write(&tmp_path, &content).map_err(|e| format!("Failed to write settings tmp: {}", e))?;
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        fs::set_permissions(&tmp_path, fs::Permissions::from_mode(0o600))
+            .map_err(|e| format!("Failed to set settings file permissions: {}", e))?;
+    }
     fs::rename(&tmp_path, &path).map_err(|e| format!("Failed to finalize settings: {}", e))?;
 
-    Ok(settings)
+    Ok(result)
 }
 
 #[tauri::command]
@@ -208,6 +235,14 @@ pub async fn provider_delete(id: String, keyring: tauri::State<'_, secrets::Keyr
     }
 
     settings_set_inner(settings.clone(), keyring.0.as_ref()).await?;
+
+    // The provider is already gone from settings.providers by this point, so
+    // settings_set_inner above never touches its keyring entry. Delete it
+    // explicitly so a removed provider's key doesn't linger in the keyring.
+    if let Err(e) = tokio::task::block_in_place(|| keyring.0.delete(&id)) {
+        log::warn!("keyring delete failed for removed provider {}: {}", id, e);
+    }
+
     Ok(settings.providers)
 }
 

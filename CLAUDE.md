@@ -81,7 +81,7 @@ Frontend calls backend via `invoke('command_name', args)`. Real-time streaming u
 - **Drip queue**: `streamingPipeline.ts` buffers streaming tokens and releases at 30ms intervals; render pushed to React at most 10fps (100ms throttle); on cancel, pending text discarded (not flushed)
 - **File attachments**: Files stored in `meta_json` as `{ files: [{ name, content }] }` (same field as `images`). File content is injected into LLM payload via `buildLlmContent()` helper but never stored in `messages.content`. Rendered as collapsible chips in `Message.tsx`.
 - **Sidebar queries**: Uses `db_list_chats_with_preview` (single correlated subquery) — no N+1 fetching
-- **Settings persistence**: `settingsStore` has no Zustand `persist` middleware — backend is single source of truth. `loadSettingsFromBackend()` called on mount; all writes go to `~/.config/ollie/settings.json` only
+- **Settings persistence**: `settingsStore` has no Zustand `persist` middleware — backend is single source of truth. `loadSettingsFromBackend()` called on mount; all writes go to `~/.config/ollie/settings.json` only. Provider API keys are the exception: they're stored in the OS Secret Service keyring (via `src-tauri/src/secrets.rs`) when available, falling back to plaintext in `settings.json` otherwise
 - **Keyboard shortcuts**: `useKeyboardShortcuts` hook in `lib/shortcuts.ts` — `Ctrl+N` new chat, `Ctrl+K` model picker, `Ctrl+/` focus input, `Ctrl+B` toggle sidebar. Uses `useRef` pattern (single stable listener).
 - **Model picker event**: `ModelSelector` listens for `ollie:focus-model-picker` custom window event to open its dropdown
 - **Markdown export**: `exportChatAsMarkdown()` in `lib/export.ts` — Blob + anchor click download
