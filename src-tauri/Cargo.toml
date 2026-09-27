@@ -1,6 +1,6 @@
 [package]
 name = "ollie"
-version = "0.2.13"
+version = "0.2.14"
 description = "Your Friendly Local AI Companion"
 authors = ["MedGm"]
 license = ""
