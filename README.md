@@ -38,6 +38,8 @@ chmod +x Ollie_0.2.12_amd64.AppImage
 
 *Requirements: [Ollama](https://ollama.com) installed and running.*
 
+Ollie is listed on [AppImageHub](https://appimage.github.io/Ollie/).
+
 **Arch Linux (AUR):** unofficial package by [Razgak](https://aur.archlinux.org/account/Razgak), repackaging the official AppImage above —
 ```bash
 yay -S ollie-appimage-bin
