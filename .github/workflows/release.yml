@@ -10,7 +10,9 @@ permissions:
 
 jobs:
   release:
-    runs-on: ubuntu-latest
+    # The AppImage bundles libraries from the build host, so they need at least
+    # the build host's glibc at runtime. Build on the oldest supported base.
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
