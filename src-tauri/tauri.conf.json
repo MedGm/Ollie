@@ -40,17 +40,17 @@
     "linux": {
       "appimage": {
         "files": {
-          "/usr/share/metainfo/io.medgm.ollie.metainfo.xml": "metainfo/io.medgm.ollie.metainfo.xml"
+          "/usr/share/metainfo/io.medgm.ollie.appdata.xml": "metainfo/io.medgm.ollie.appdata.xml"
         }
       },
       "deb": {
         "files": {
-          "/usr/share/metainfo/io.medgm.ollie.metainfo.xml": "metainfo/io.medgm.ollie.metainfo.xml"
+          "/usr/share/metainfo/io.medgm.ollie.appdata.xml": "metainfo/io.medgm.ollie.appdata.xml"
         }
       },
       "rpm": {
         "files": {
-          "/usr/share/metainfo/io.medgm.ollie.metainfo.xml": "metainfo/io.medgm.ollie.metainfo.xml"
+          "/usr/share/metainfo/io.medgm.ollie.appdata.xml": "metainfo/io.medgm.ollie.appdata.xml"
         }
       }
     }
