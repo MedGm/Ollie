@@ -24,14 +24,21 @@ try() {
   ( env "$@" "$APPDIR/AppRun" > "$WORK/log" 2>&1 ) &
   local pid=$!
   sleep 10
-  if kill -0 "$pid" 2>/dev/null; then
+  # WebKit renders in a separate WebKitWebProcess; if that dies the window
+  # stays open but grey, so check it and the log, not just the main process.
+  # AppRun execs into the app, so $pid is the app and WebKit processes are its
+  # children (they run with relative paths, so match by parent, not by path).
+  if kill -0 "$pid" 2>/dev/null && pgrep -P "$pid" -f WebKitWebProcess >/dev/null \
+     && ! grep -qE "Could not create|EGL_BAD|Aborting" "$WORK/log"; then
     echo "OK      $name"
-    pkill -P "$pid" 2>/dev/null; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null
+  elif kill -0 "$pid" 2>/dev/null; then
+    echo "GREY    $name  (window open, web content failed: $(grep -m1 -E 'EGL|Abort' "$WORK/log"))"
   elif grep -q "cannot open shared object file" "$WORK/log"; then
     echo "SKIP    $name  (library not installed on this system)"
   else
     echo "CRASH   $name  ($(grep -m1 -E 'EGL|Abort|error' "$WORK/log"))"
   fi
+  pkill -P "$pid" 2>/dev/null; kill "$pid" 2>/dev/null; wait "$pid" 2>/dev/null
   sleep 1
 }
 
