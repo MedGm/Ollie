@@ -11,61 +11,72 @@
   </tr>
 </table>
 
-<h3> Your Friendly Local AI Companion </h3>
+<h3>Your Friendly Local AI Companion</h3>
+
+[![Release](https://img.shields.io/github/v/release/MedGm/Ollie)](https://github.com/MedGm/Ollie/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/MedGm/Ollie/total)](https://github.com/MedGm/Ollie/releases)
+[![License](https://img.shields.io/github/license/MedGm/Ollie)](LICENSE)
 
 </div>
 
-**Ollie** (formerly OllamaGUI) is a personal AI assistant you run on your own Linux machine. It provides a polished, modern interface for chatting with local LLMs via Ollama—no CLI required.
-
-If you want a personal, single-user assistant that feels premium, fast, and always-on, this is it.
+Ollie (formerly OllamaGUI) is a Linux desktop app for chatting with local LLMs through [Ollama](https://ollama.com), with optional support for OpenAI, Anthropic, Google Gemini and GroqCloud. Chats and models stay on your machine.
 
 ![Overview](docs/screenshots/overview.png)
 
-## Install (Linux AppImage)
+## Install
 
-No configuration needed. Just download and run.
+Local models need [Ollama](https://ollama.com) installed and running.
+
+### Debian / Ubuntu (.deb)
 
 ```bash
-# Download the AppImage (v0.2.16)
+wget https://github.com/MedGm/Ollie/releases/download/v0.2.16/Ollie_0.2.16_amd64.deb
+sudo apt install ./Ollie_0.2.16_amd64.deb
+ollie
+```
+
+### Fedora / RHEL (.rpm)
+
+```bash
+sudo dnf install https://github.com/MedGm/Ollie/releases/download/v0.2.16/Ollie-0.2.16-1.x86_64.rpm
+ollie
+```
+
+### Any distro (AppImage)
+
+```bash
 wget https://github.com/MedGm/Ollie/releases/download/v0.2.16/Ollie_0.2.16_amd64.AppImage
-
-# Make it executable
 chmod +x Ollie_0.2.16_amd64.AppImage
-
-# Run it
 ./Ollie_0.2.16_amd64.AppImage
 ```
 
-*Requirements: [Ollama](https://ollama.com) installed and running.*
+Also listed on [AppImageHub](https://appimage.github.io/Ollie/).
 
-Ollie is listed on [AppImageHub](https://appimage.github.io/Ollie/).
+### Arch Linux (AUR)
 
-**Arch Linux (AUR):** unofficial package by [Razgak](https://aur.archlinux.org/account/Razgak), repackaging the official AppImage above —
+Unofficial package by [Razgak](https://aur.archlinux.org/account/Razgak) that repackages the AppImage:
+
 ```bash
 yay -S ollie-appimage-bin
 ```
 
-## Highlights
+## Features
 
-**Local-First Experience**
-Ollie runs entirely on your machine. Your chats, data, and models stay private. No cloud dependencies, no tracking.
+- Chat with Markdown, code highlighting, tables and math
+- Pull, delete and inspect Ollama models from the app
+- Images for vision models (e.g. LLaVA), plus PDF and text file attachments
+- Monitoring dashboard: CPU, memory, running models and VRAM, with unload buttons
+- Cloud providers: OpenAI, Anthropic, Google Gemini, GroqCloud; API keys stored in the system keyring
+- MCP (Model Context Protocol) tool support
+- Per-chat system prompts, message editing and regeneration
+- Collapsible reasoning for thinking models
+- Live preview of HTML/SVG code blocks
+- Automatic context trimming before the model's limit
+- Export chats as Markdown
+- Light, dark and system themes
+- Keyboard shortcuts: `Ctrl+N` new chat, `Ctrl+K` switch model, `Ctrl+/` focus input, `Ctrl+B` toggle sidebar
 
-**Modern Chat Interface**
-A clean, distraction-free UI built with React and Tailwind. Supports full Markdown rendering, code highlighting, tables, and math equations.
-
-**Model Management**
-Pull, delete, and manage your Ollama models directly from the app. No need to drop to the terminal.
-
-**Vision & File Analysis**
-Drag and drop images to analyze them with vision models like LLaVA. Upload PDFs and text files to chat with your documents instantly.
-
-**Monitoring Dashboard**
-Real-time tracking of system resources (CPU, Memory), running models with VRAM usage, and the ability to stop/unload models directly from the dashboard.
-
-**Dark Theme**
-Full dark mode with a light/dark/system toggle. System mode follows your OS preference automatically.
-
-## Gallery
+## Screenshots
 
 | Models | Settings |
 |:---:|:---:|
@@ -75,62 +86,49 @@ Full dark mode with a light/dark/system toggle. System mode follows your OS pref
 |:---:|:---:|
 | ![Monitoring](docs/screenshots/monitoring.png) | ![Vision](docs/screenshots/vision-model.png) |
 
-## Tech Stack
+## Data
 
-- **Frontend**: React 19, TypeScript, Tailwind CSS v4
-- **Backend**: Tauri v2 (Rust)
-- **Database**: SQLite (local persistence)
+- Chats: `~/.config/ollie/app.db` (SQLite)
+- Settings: `~/.config/ollie/settings.json`
+- Cloud API keys: system keyring (GNOME Keyring / KDE Wallet), or `settings.json` if no keyring is available
 
-## Data & Configuration
+## Built with
 
-- **Local Database**: `~/.config/ollie/app.db`
-- **Settings**: `~/.config/ollie/settings.json`
+Tauri v2 (Rust), React 19, TypeScript, Tailwind CSS v4, SQLite.
 
 ## Roadmap
 
-### ✅ Recently Completed
+- Import chats from ChatGPT/Claude exports; export to JSON or PDF
+- Conversation branching
+- Side-by-side comparison of multiple models
+- Prompt templates
+- Chat with a local folder or codebase (RAG)
+- Ollama server discovery on the local network
+- Create custom Modelfiles from the UI
+- Windows and macOS builds
 
-- **Smart Streaming**: Render-throttled drip queue (10fps push to React) + dual markdown pipeline — streaming uses GFM tables only, syntax highlight and KaTeX deferred post-stream via `useTransition`. Eliminates lag with ultra-fast cloud providers.
-- **Keyboard Shortcuts**: `Ctrl+N` new chat, `Ctrl+K` model switch, `Ctrl+/` focus input, `Ctrl+B` toggle sidebar.
-- **Export Conversations**: Download any chat as a Markdown file.
-- **Context Window Management**: Automatic token budget — oldest messages trimmed before hitting provider limits.
-- **MCP Support**: Full Model Context Protocol integration for extensible tool access (filesystem, web, code execution, etc.).
-- **Cloud API Support**: Unified provider system supporting OpenAI, Anthropic, Google Gemini, and GroqCloud alongside local Ollama models.
-- **Startup Wizard**: Choosing between Local and Cloud modes.
-- **Think Mode**: Toggle visibility for reasoning models' thought processes.
-- **Real-time HTML Preview**: Instant rendering of HTML/SVG artifacts directly in chat, with fullscreen expand.
-- **Message Editing**: Edit sent messages and regenerate responses from any point.
-- **Graceful Error Handling**: Auto-fallback for models without tool support, truncation for large tool outputs.
+## Stats
 
-### 🚀 Upcoming Features
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/MedGm/Ollie/stats/downloads-dark.svg">
+  <img alt="Downloads per release, stacked by AppImage, .deb and .rpm" src="https://raw.githubusercontent.com/MedGm/Ollie/stats/downloads-light.svg">
+</picture>
 
-**Core & Chat**
-- **Export/Import Conversations**: Import from ChatGPT/Claude formats; export to JSON or PDF.
-- **Structured Outputs**: Support for JSON schemas and advanced tool calling patterns.
-- **Conversation Branching**: Fork conversations from any point.
-- **Multi-Model Comparison**: Send same prompt to multiple models, compare responses side-by-side.
-- **Prompt Templates Library**: Pre-built and user-created templates with variables.
+Exact numbers: [downloads by release](https://github.com/MedGm/Ollie/blob/stats/downloads-by-release.csv) and [weekly totals](https://github.com/MedGm/Ollie/blob/stats/downloads-history.csv). Updated weekly by a GitHub Action.
 
-**Developer Tools**
-- **RAG / Document Memory**: Index local folders, chat with your codebase using embeddings.
-- **Local Code Sandbox**: Run Python/JavaScript code blocks in isolated environment with inline output.
-- **GitHub Integration**: Fetch repos for context, analyze PRs, export code to Gists.
+<a href="https://star-history.com/#MedGm/Ollie&Date">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=MedGm/Ollie&type=Date&theme=dark">
+    <img alt="Star history" src="https://api.star-history.com/svg?repos=MedGm/Ollie&type=Date">
+  </picture>
+</a>
 
-**Agents & Models**
-- **Custom Agents**: Configure specific system prompts and behaviors per chat.
-- **Model Factory**: Create and push custom Modelfiles directly from the UI.
+## Contributing
 
-**Platform & Integration**
-- **Ollama Server Discovery**: Auto-detect and connect to Ollama instances on local network.
-- **Windows & MacOS Support**: Cross-platform builds.
-- **Voice Mode**: Hands-free voice interaction.
-- **Internationalization**: Multi-language UI support.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Bug reports and pull requests are welcome.
 
-## Contributors
-
-- [@MedGm](https://github.com/MedGm) — creator & maintainer
-- [@leoniv](https://github.com/leoniv) — dark theme & UI polish
+Contributors: [@MedGm](https://github.com/MedGm) (creator and maintainer), [@leoniv](https://github.com/leoniv) (dark theme and UI work).
 
 ## License
 
-MIT License. Created by @MedGm.
+MIT
