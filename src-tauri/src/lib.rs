@@ -94,9 +94,9 @@ pub fn run() {
         });
       }
 
-      // Disable GPU/hardware acceleration at the WebKit API level.
-      // Prevents EGL initialization entirely — fixes Ubuntu 26.04 / Mesa 25+
-      // crash where eglGetDisplay(EGL_DEFAULT_DISPLAY) returns EGL_BAD_PARAMETER.
+      // Disable WebKit hardware acceleration. Note: this runs after the web
+      // process starts, so it does NOT prevent the AppImage EGL abort from
+      // issue #11 (see main.rs for that); candidate for removal.
       #[cfg(target_os = "linux")]
       {
         use webkit2gtk::{SettingsExt, WebViewExt};

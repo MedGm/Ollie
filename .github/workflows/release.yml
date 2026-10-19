@@ -36,11 +36,11 @@ jobs:
           projectPath: src-tauri
           args: --verbose
 
-      - name: Fix AppImage permissions
+      - name: Fix AppImage (permissions, host-coupled libs)
         run: |
           sudo apt-get install -y squashfs-tools
           for f in src-tauri/target/release/bundle/appimage/*.AppImage; do
-            bash ./scripts/fix-appimage-permissions.sh "$f"
+            bash ./scripts/fix-appimage.sh "$f"
           done
 
       - name: Generate changelog
