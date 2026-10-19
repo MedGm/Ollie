@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="340" viewBox="0 0 840 340" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<title>Ollie downloads per release</title>
+<rect width="840" height="340" fill="#ffffff"/>
+<text x="52" y="28" font-size="16" font-weight="600" fill="#1f2328">Downloads per release</text>
+<text x="52" y="48" font-size="12" fill="#656d76">1,990 total across 18 releases, as of 2026-10-19</text>
+<rect x="766" y="38" width="12" height="12" rx="2" fill="#1baf7a"/>
+<text x="783" y="48" font-size="12" fill="#1f2328">.rpm</text>
+<rect x="708" y="38" width="12" height="12" rx="2" fill="#eb6834"/>
+<text x="725" y="48" font-size="12" fill="#1f2328">.deb</text>
+<rect x="622" y="38" width="12" height="12" rx="2" fill="#2a78d6"/>
+<text x="639" y="48" font-size="12" fill="#1f2328">AppImage</text>
+<line x1="52" x2="824" y1="296.0" y2="296.0" stroke="#c3c2b7" stroke-width="1"/>
+<text x="44" y="300.0" font-size="11" fill="#656d76" text-anchor="end">0</text>
+<line x1="52" x2="824" y1="252.4" y2="252.4" stroke="#e1e0d9" stroke-width="1"/>
+<text x="44" y="256.4" font-size="11" fill="#656d76" text-anchor="end">200</text>
+<line x1="52" x2="824" y1="208.8" y2="208.8" stroke="#e1e0d9" stroke-width="1"/>
+<text x="44" y="212.8" font-size="11" fill="#656d76" text-anchor="end">400</text>
+<line x1="52" x2="824" y1="165.2" y2="165.2" stroke="#e1e0d9" stroke-width="1"/>
+<text x="44" y="169.2" font-size="11" fill="#656d76" text-anchor="end">600</text>
+<line x1="52" x2="824" y1="121.6" y2="121.6" stroke="#e1e0d9" stroke-width="1"/>
+<text x="44" y="125.6" font-size="11" fill="#656d76" text-anchor="end">800</text>
+<line x1="52" x2="824" y1="78.0" y2="78.0" stroke="#e1e0d9" stroke-width="1"/>
+<text x="44" y="82.0" font-size="11" fill="#656d76" text-anchor="end">1,000</text>
+<rect x="60.1" y="294.7" width="26.6" height="1.3" fill="#2a78d6"/>
+<rect x="60.1" y="294.5" width="26.6" height="0.2" fill="#eb6834"/>
+<path d="M60.1,294.5 V294.5 Q60.1,293.4 61.2,293.4 H85.6 Q86.7,293.4 86.7,294.5 V294.5 Z" fill="#1baf7a"/>
+<text x="73.4" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.1.4</text>
+<rect x="103.0" y="294.0" width="26.6" height="2.0" fill="#2a78d6"/>
+<rect x="103.0" y="293.2" width="26.6" height="0.9" fill="#eb6834"/>
+<path d="M103.0,293.2 V293.2 Q103.0,289.9 106.3,289.9 H126.4 Q129.6,289.9 129.6,293.2 V293.2 Z" fill="#1baf7a"/>
+<text x="116.3" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.0</text>
+<rect x="145.9" y="287.5" width="26.6" height="8.5" fill="#2a78d6"/>
+<rect x="145.9" y="286.8" width="26.6" height="0.7" fill="#eb6834"/>
+<path d="M145.9,286.8 V286.8 Q145.9,286.2 146.6,286.2 H171.9 Q172.5,286.2 172.5,286.8 V286.8 Z" fill="#1baf7a"/>
+<text x="159.2" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.1</text>
+<rect x="188.8" y="261.6" width="26.6" height="34.4" fill="#2a78d6"/>
+<rect x="188.8" y="261.3" width="26.6" height="0.2" fill="#eb6834"/>
+<path d="M188.8,261.3 V261.3 Q188.8,261.1 189.0,261.1 H215.2 Q215.4,261.1 215.4,261.3 V261.3 Z" fill="#1baf7a"/>
+<text x="202.1" y="255.1" font-size="11" fill="#1f2328" text-anchor="middle">160</text>
+<text x="202.1" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.2</text>
+<rect x="231.7" y="290.1" width="26.6" height="5.9" fill="#2a78d6"/>
+<rect x="231.7" y="288.6" width="26.6" height="1.5" fill="#eb6834"/>
+<path d="M231.7,288.6 V288.6 Q231.7,287.9 232.4,287.9 H257.6 Q258.3,287.9 258.3,288.6 V288.6 Z" fill="#1baf7a"/>
+<text x="245.0" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.3</text>
+<rect x="274.6" y="231.7" width="26.6" height="64.3" fill="#2a78d6"/>
+<rect x="274.6" y="218.0" width="26.6" height="11.7" fill="#eb6834"/>
+<path d="M274.6,216.0 V216.0 Q274.6,212.9 277.6,212.9 H298.2 Q301.2,212.9 301.2,216.0 V216.0 Z" fill="#1baf7a"/>
+<text x="287.9" y="206.9" font-size="11" fill="#1f2328" text-anchor="middle">381</text>
+<text x="287.9" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.4</text>
+<rect x="317.5" y="294.0" width="26.6" height="2.0" fill="#2a78d6"/>
+<rect x="317.5" y="293.8" width="26.6" height="0.2" fill="#eb6834"/>
+<path d="M317.5,293.8 V293.8 Q317.5,293.4 317.9,293.4 H343.6 Q344.1,293.4 344.1,293.8 V293.8 Z" fill="#1baf7a"/>
+<text x="330.8" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.5</text>
+<rect x="360.4" y="294.0" width="26.6" height="2.0" fill="#2a78d6"/>
+<rect x="360.4" y="293.8" width="26.6" height="0.2" fill="#eb6834"/>
+<path d="M360.4,293.8 V293.8 Q360.4,293.6 360.6,293.6 H386.7 Q387.0,293.6 387.0,293.8 V293.8 Z" fill="#1baf7a"/>
+<text x="373.7" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.6</text>
+<rect x="403.3" y="293.8" width="26.6" height="2.2" fill="#2a78d6"/>
+<rect x="403.3" y="293.4" width="26.6" height="0.4" fill="#eb6834"/>
+<path d="M403.3,293.4 V293.4 Q403.3,292.7 403.9,292.7 H429.2 Q429.9,292.7 429.9,293.4 V293.4 Z" fill="#1baf7a"/>
+<text x="416.6" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.7</text>
+<rect x="446.1" y="293.8" width="26.6" height="2.2" fill="#2a78d6"/>
+<rect x="446.1" y="293.4" width="26.6" height="0.4" fill="#eb6834"/>
+<path d="M446.1,293.4 V293.4 Q446.1,292.7 446.8,292.7 H472.1 Q472.7,292.7 472.7,293.4 V293.4 Z" fill="#1baf7a"/>
+<text x="459.4" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.8</text>
+<rect x="489.0" y="135.1" width="26.6" height="160.9" fill="#2a78d6"/>
+<rect x="489.0" y="118.3" width="26.6" height="14.8" fill="#eb6834"/>
+<path d="M489.0,116.3 V115.4 Q489.0,111.4 493.0,111.4 H511.6 Q515.6,111.4 515.6,115.4 V116.3 Z" fill="#1baf7a"/>
+<text x="502.3" y="105.4" font-size="11" fill="#1f2328" text-anchor="middle">847</text>
+<text x="502.3" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.9</text>
+<rect x="531.9" y="259.6" width="26.6" height="36.4" fill="#2a78d6"/>
+<rect x="531.9" y="254.1" width="26.6" height="3.5" fill="#eb6834"/>
+<path d="M531.9,254.1 V254.1 Q531.9,252.6 533.5,252.6 H557.0 Q558.5,252.6 558.5,254.1 V254.1 Z" fill="#1baf7a"/>
+<text x="545.2" y="246.6" font-size="11" fill="#1f2328" text-anchor="middle">199</text>
+<text x="545.2" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.10</text>
+<rect x="574.8" y="295.1" width="26.6" height="0.9" fill="#2a78d6"/>
+<rect x="574.8" y="294.7" width="26.6" height="0.4" fill="#eb6834"/>
+<path d="M574.8,294.7 V294.7 Q574.8,294.3 575.3,294.3 H601.0 Q601.4,294.3 601.4,294.7 V294.7 Z" fill="#1baf7a"/>
+<text x="588.1" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.11</text>
+<rect x="617.7" y="295.3" width="26.6" height="0.7" fill="#2a78d6"/>
+<path d="M617.7,295.3 V295.3 Q617.7,295.1 617.9,295.1 H644.1 Q644.3,295.1 644.3,295.3 V295.3 Z" fill="#1baf7a"/>
+<text x="631.0" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.12</text>
+<rect x="660.6" y="295.8" width="26.6" height="0.2" fill="#2a78d6"/>
+<rect x="660.6" y="295.6" width="26.6" height="0.2" fill="#eb6834"/>
+<path d="M660.6,295.6 V295.6 Q660.6,295.3 660.8,295.3 H687.0 Q687.2,295.3 687.2,295.6 V295.6 Z" fill="#1baf7a"/>
+<text x="673.9" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.13</text>
+<rect x="703.5" y="294.9" width="26.6" height="1.1" fill="#2a78d6"/>
+<rect x="703.5" y="294.5" width="26.6" height="0.4" fill="#eb6834"/>
+<path d="M703.5,294.5 V294.5 Q703.5,294.3 703.7,294.3 H729.9 Q730.1,294.3 730.1,294.5 V294.5 Z" fill="#1baf7a"/>
+<text x="716.8" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.14</text>
+<rect x="746.4" y="256.5" width="26.6" height="39.5" fill="#2a78d6"/>
+<rect x="746.4" y="252.8" width="26.6" height="3.7" fill="#eb6834"/>
+<path d="M746.4,252.8 V252.8 Q746.4,251.7 747.5,251.7 H771.9 Q773.0,251.7 773.0,252.8 V252.8 Z" fill="#1baf7a"/>
+<text x="759.7" y="245.7" font-size="11" fill="#1f2328" text-anchor="middle">203</text>
+<text x="759.7" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.15</text>
+<path d="M789.3,296.0 V296.0 Q789.3,295.6 789.7,295.6 H815.4 Q815.9,295.6 815.9,296.0 V296.0 Z" fill="#2a78d6"/>
+<text x="802.6" y="312" font-size="10" fill="#656d76" text-anchor="middle">0.2.16</text>
+</svg>
