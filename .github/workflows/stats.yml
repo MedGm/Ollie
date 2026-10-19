@@ -1,0 +1,57 @@
+name: Download stats
+
+# Redraws the downloads-per-release chart and appends a totals snapshot to
+# downloads-history.csv. Output is committed to the `stats` branch so main's
+# history stays clean; the README embeds the SVGs from there.
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  # Releases are published with GITHUB_TOKEN, which does not trigger
+  # `release` events in other workflows, so follow the Release workflow instead.
+  workflow_run:
+    workflows: ["Release (Tauri Linux AppImage)"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  stats:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main (for the script)
+        uses: actions/checkout@v4
+        with:
+          path: main
+
+      - name: Check out or create the stats branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git ls-remote --exit-code --heads "$URL" stats > /dev/null; then
+            git clone --quiet --branch stats --single-branch "$URL" stats
+          else
+            mkdir stats
+            git -C stats init --quiet -b stats
+            git -C stats remote add origin "$URL"
+          fi
+
+      - name: Generate charts and snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 main/scripts/release_stats.py "$GITHUB_REPOSITORY" stats
+
+      - name: Commit to stats branch
+        working-directory: stats
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit --quiet -m "Update download stats ($(date -u +%Y-%m-%d))"
+            git push --quiet origin stats
+          fi
