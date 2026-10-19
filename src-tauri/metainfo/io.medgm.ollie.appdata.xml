@@ -48,6 +48,11 @@
     </screenshot>
   </screenshots>
   <releases>
+    <release version="0.2.16" date="2026-10-19">
+      <description>
+        <p>Fixes the AppImage showing a blank grey window on newer distributions such as Ubuntu 26.04. The window now opens at a normal size instead of maximized.</p>
+      </description>
+    </release>
     <release version="0.2.15" date="2026-09-28">
       <description>
         <p>App metadata now uses the .appdata.xml file name so AppImageHub shows the description and screenshots.</p>
